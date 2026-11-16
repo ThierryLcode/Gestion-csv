@@ -9,7 +9,7 @@
 <body>
 <header class="topbar">
   <h1>Gestion CSV</h1>
-  <span class="subtitle">Fusionner · Découper · Joindre · Filtrer</span>
+  <span class="subtitle">Fusionner · Découper · Joindre · Filtrer · Nettoyer · Comparer · SQL</span>
 </header>
 
 <div class="layout">
@@ -20,7 +20,7 @@
       <label class="dropzone" id="dropzone">
         <input type="file" id="file-input" accept=".csv,.tsv,.txt,text/csv" multiple hidden>
         <strong>Déposez vos fichiers ici</strong>
-        <span>ou cliquez pour parcourir</span>
+        <span>ou cliquez pour parcourir — aucune limite de taille</span>
       </label>
       <div class="grid2">
         <label>Séparateur
@@ -66,22 +66,39 @@
   <!-- ===================== Zone principale ===================== -->
   <main class="main">
     <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="preview">Aperçu &amp; export</button>
-      <button class="tab" data-tab="merge">Fusionner</button>
-      <button class="tab" data-tab="split">Découper</button>
-      <button class="tab" data-tab="join">Joindre</button>
-      <button class="tab" data-tab="filter">Filtrer</button>
+      <div class="tab-group"><span class="tab-label">Fichier</span>
+        <button class="tab active" data-tab="preview" data-single>Aperçu &amp; export</button>
+        <button class="tab" data-tab="profile" data-single>Profil</button>
+      </div>
+      <div class="tab-group"><span class="tab-label">Transformer</span>
+        <button class="tab" data-tab="columns" data-single>Colonnes</button>
+        <button class="tab" data-tab="sort" data-single>Trier</button>
+        <button class="tab" data-tab="dedupe" data-single>Doublons</button>
+        <button class="tab" data-tab="filter" data-single>Filtrer</button>
+        <button class="tab" data-tab="transform" data-single>Nettoyer &amp; calculer</button>
+      </div>
+      <div class="tab-group"><span class="tab-label">Plusieurs fichiers</span>
+        <button class="tab" data-tab="merge">Fusionner</button>
+        <button class="tab" data-tab="join">Joindre</button>
+        <button class="tab" data-tab="compare">Comparer</button>
+        <button class="tab" data-tab="split" data-single>Découper</button>
+      </div>
+      <div class="tab-group"><span class="tab-label">Avancé</span>
+        <button class="tab" data-tab="sql">SQL</button>
+        <button class="tab" data-tab="recipes">Recettes</button>
+      </div>
     </nav>
+
+    <div class="active-bar" id="active-bar">
+      <label>Fichier de travail <select id="active-file" class="file-select"></select></label>
+      <span id="active-meta" class="meta"></span>
+    </div>
 
     <div id="message" class="message" hidden></div>
 
     <!-- Aperçu -->
     <section class="panel active" id="panel-preview">
-      <div class="toolbar">
-        <label>Fichier <select id="pv-file" class="file-select"></select></label>
-        <span id="pv-meta" class="meta"></span>
-      </div>
-      <details class="card export" open>
+      <details class="card export">
         <summary>Options d'export</summary>
         <div class="grid4">
           <label>Séparateur
@@ -117,13 +134,118 @@
         <label class="check"><input type="checkbox" id="ex-headers" checked> Inclure la ligne d'en-têtes</label>
         <p class="hint">Ces options s'appliquent à tous les téléchargements (fichiers et archives ZIP).</p>
       </details>
-      <div class="actions"><a class="btn primary" id="pv-download" href="#">Télécharger le CSV</a></div>
+      <div class="actions">
+        <a class="btn primary" id="pv-download" href="#">Télécharger le CSV</a>
+      </div>
       <div class="table-wrap"><table id="pv-table" class="data"></table></div>
       <div class="pager">
+        <button class="btn" id="pv-first" title="Début">⏮</button>
         <button class="btn" id="pv-prev">◀ Précédent</button>
         <span id="pv-range"></span>
         <button class="btn" id="pv-next">Suivant ▶</button>
+        <label class="inline">Aller à la ligne <input type="number" id="pv-goto" min="1" class="narrow"></label>
       </div>
+    </section>
+
+    <!-- Profil -->
+    <section class="panel" id="panel-profile">
+      <p class="intro">Vue d'ensemble de chaque colonne : type détecté, cellules vides, valeurs distinctes, extrêmes et valeurs les plus fréquentes.</p>
+      <div class="actions">
+        <button class="btn primary" id="pf-run">Analyser</button>
+        <button class="btn" id="pf-export" disabled>Exporter le profil (CSV)</button>
+      </div>
+      <div id="pf-result"></div>
+    </section>
+
+    <!-- Colonnes -->
+    <section class="panel" id="panel-columns">
+      <p class="intro">Cochez les colonnes à conserver, réordonnez-les avec les flèches et renommez-les si besoin.</p>
+      <div class="card">
+        <div class="actions tight">
+          <button class="btn small" id="cl-all">Tout cocher</button>
+          <button class="btn small" id="cl-none">Tout décocher</button>
+          <button class="btn small" id="cl-az">Trier A → Z</button>
+          <button class="btn small" id="cl-reset">Ordre d'origine</button>
+        </div>
+        <div id="cl-list" class="col-editor"></div>
+      </div>
+      <div class="actions"><button class="btn primary" id="cl-run">Appliquer</button></div>
+    </section>
+
+    <!-- Tri -->
+    <section class="panel" id="panel-sort">
+      <p class="intro">Trie les lignes sur une ou plusieurs colonnes (la première est prioritaire). Les cellules vides sont toujours placées à la fin. Fonctionne aussi sur des fichiers plus gros que la mémoire.</p>
+      <div class="card">
+        <div id="so-keys"></div>
+        <button class="btn" id="so-add">+ Ajouter un critère</button>
+      </div>
+      <div class="actions"><button class="btn primary" id="so-run">Trier</button></div>
+    </section>
+
+    <!-- Doublons -->
+    <section class="panel" id="panel-dedupe">
+      <p class="intro">Repère les lignes en double selon certaines colonnes (ou la ligne entière) pour les supprimer ou les isoler.</p>
+      <div class="card">
+        <h3>Colonnes formant l'identifiant</h3>
+        <p class="hint">Aucune colonne cochée : deux lignes sont des doublons si toutes leurs cellules sont identiques.</p>
+        <div id="dd-cols" class="checklist cols"></div>
+      </div>
+      <div class="card">
+        <h3>Résultat souhaité</h3>
+        <div class="radios">
+          <label class="check"><input type="radio" name="dd-mode" value="remove" checked> <span><b>Supprimer les doublons</b> — une seule ligne par identifiant</span></label>
+          <label class="check"><input type="radio" name="dd-mode" value="duplicates"> <span><b>Isoler les doublons</b> — toutes les lignes dont l'identifiant apparaît plusieurs fois</span></label>
+          <label class="check"><input type="radio" name="dd-mode" value="removed"> <span><b>Lignes écartées</b> — uniquement les lignes que la suppression retirerait</span></label>
+          <label class="check"><input type="radio" name="dd-mode" value="singles"> <span><b>Lignes uniques</b> — uniquement les identifiants présents une seule fois</span></label>
+        </div>
+        <div class="radios inline" id="dd-keep-wrap">
+          <label class="check"><input type="radio" name="dd-keep" value="first" checked> Garder la première occurrence</label>
+          <label class="check"><input type="radio" name="dd-keep" value="last"> Garder la dernière occurrence</label>
+        </div>
+        <div class="radios inline">
+          <label class="check"><input type="checkbox" id="dd-ci"> Ignorer la casse</label>
+          <label class="check"><input type="checkbox" id="dd-trim" checked> Ignorer les espaces autour des valeurs</label>
+        </div>
+      </div>
+      <div class="actions"><button class="btn primary" id="dd-run">Appliquer</button></div>
+    </section>
+
+    <!-- Filtre -->
+    <section class="panel" id="panel-filter">
+      <p class="intro">Conserve uniquement les lignes qui respectent les conditions.</p>
+      <div class="card">
+        <div class="radios inline">
+          <label class="check"><input type="radio" name="ft-combine" value="all" checked> Toutes les conditions (ET)</label>
+          <label class="check"><input type="radio" name="ft-combine" value="any"> Au moins une condition (OU)</label>
+        </div>
+      </div>
+      <div id="ft-conditions"></div>
+      <div class="actions">
+        <button class="btn" id="ft-add">+ Ajouter une condition</button>
+        <button class="btn primary" id="ft-run">Filtrer</button>
+      </div>
+    </section>
+
+    <!-- Nettoyer & calculer -->
+    <section class="panel" id="panel-transform">
+      <p class="intro">Enchaînez des opérations de nettoyage et de calcul ; elles sont appliquées dans l'ordre, en un seul passage.</p>
+      <div id="tf-ops"></div>
+      <div class="card add-op">
+        <label>Ajouter une opération
+          <select id="tf-type">
+            <option value="trim">Supprimer les espaces superflus</option>
+            <option value="case">Changer la casse (MAJUSCULES, minuscules…)</option>
+            <option value="replace">Rechercher / remplacer</option>
+            <option value="date">Convertir des dates</option>
+            <option value="number">Normaliser des nombres</option>
+            <option value="concat">Concaténer des colonnes</option>
+            <option value="extract">Extraire une partie (expression régulière)</option>
+            <option value="constant">Ajouter une colonne à valeur fixe</option>
+          </select>
+        </label>
+        <button class="btn" id="tf-add">+ Ajouter</button>
+      </div>
+      <div class="actions"><button class="btn primary" id="tf-run">Appliquer</button></div>
     </section>
 
     <!-- Fusion -->
@@ -149,23 +271,9 @@
       <div class="actions"><button class="btn primary" id="mg-run">Fusionner</button></div>
     </section>
 
-    <!-- Découpage -->
-    <section class="panel" id="panel-split">
-      <p class="intro">Crée un fichier par valeur (ou combinaison de valeurs) des colonnes choisies.</p>
-      <div class="card">
-        <label>Fichier à découper <select id="sp-file" class="file-select"></select></label>
-        <h3>Colonnes de découpage</h3>
-        <div id="sp-cols" class="checklist cols"></div>
-        <p class="hint" id="sp-estimate"></p>
-        <label class="check"><input type="checkbox" id="sp-remove"> Retirer ces colonnes des fichiers produits</label>
-      </div>
-      <div class="actions"><button class="btn primary" id="sp-run">Découper</button></div>
-      <div id="sp-result" class="card" hidden></div>
-    </section>
-
     <!-- Jointure -->
     <section class="panel" id="panel-join">
-      <p class="intro">Associe les lignes de deux fichiers dont les colonnes clés ont les mêmes valeurs.</p>
+      <p class="intro">Associe les lignes de deux fichiers dont les colonnes clés ont les mêmes valeurs. Pour les gros volumes, placez le plus petit fichier à droite (il est chargé en mémoire).</p>
       <div class="card grid2">
         <label>Fichier de gauche <select id="jn-left" class="file-select"></select></label>
         <label>Fichier de droite <select id="jn-right" class="file-select"></select></label>
@@ -190,22 +298,90 @@
       <div class="actions"><button class="btn primary" id="jn-run">Joindre</button></div>
     </section>
 
-    <!-- Filtre -->
-    <section class="panel" id="panel-filter">
-      <p class="intro">Conserve uniquement les lignes qui respectent les conditions.</p>
+    <!-- Comparaison -->
+    <section class="panel" id="panel-compare">
+      <p class="intro">Compare deux versions d'un même fichier : lignes ajoutées, supprimées et modifiées (avec les anciennes valeurs). Les lignes sont reconnues grâce à une ou plusieurs colonnes identifiantes.</p>
+      <div class="card grid2">
+        <label>Ancienne version <select id="cp-old" class="file-select"></select></label>
+        <label>Nouvelle version <select id="cp-new" class="file-select"></select></label>
+      </div>
       <div class="card">
-        <label>Fichier à filtrer <select id="ft-file" class="file-select"></select></label>
+        <h3>Colonnes identifiant une ligne</h3>
+        <div id="cp-keys" class="checklist cols"></div>
+        <h3>Colonnes à comparer</h3>
+        <p class="hint">Aucune colonne cochée : toutes les colonnes communes (hors identifiant) sont comparées.</p>
+        <div id="cp-cols" class="checklist cols"></div>
+      </div>
+      <div class="card">
         <div class="radios inline">
-          <label class="check"><input type="radio" name="ft-combine" value="all" checked> Toutes les conditions (ET)</label>
-          <label class="check"><input type="radio" name="ft-combine" value="any"> Au moins une condition (OU)</label>
+          <label class="check"><input type="checkbox" id="cp-unchanged"> Inclure les lignes identiques</label>
+          <label class="check"><input type="checkbox" id="cp-ci"> Ignorer la casse</label>
+          <label class="check"><input type="checkbox" id="cp-trim" checked> Ignorer les espaces autour des valeurs</label>
         </div>
       </div>
-      <div id="ft-conditions"></div>
-      <button class="btn" id="ft-add">+ Ajouter une condition</button>
+      <div class="actions"><button class="btn primary" id="cp-run">Comparer</button></div>
+      <div id="cp-result"></div>
+    </section>
+
+    <!-- Découpage -->
+    <section class="panel" id="panel-split">
+      <p class="intro">Crée un fichier par valeur (ou combinaison de valeurs) des colonnes choisies.</p>
       <div class="card">
-        <label>Nom du fichier résultat (facultatif) <input id="ft-name" placeholder="filtre.csv"></label>
+        <h3>Colonnes de découpage</h3>
+        <div id="sp-cols" class="checklist cols"></div>
+        <p class="hint" id="sp-estimate"></p>
+        <label class="check"><input type="checkbox" id="sp-remove"> Retirer ces colonnes des fichiers produits</label>
       </div>
-      <div class="actions"><button class="btn primary" id="ft-run">Filtrer</button></div>
+      <div class="actions"><button class="btn primary" id="sp-run">Découper</button></div>
+      <div id="sp-result" class="card" hidden></div>
+    </section>
+
+    <!-- SQL -->
+    <section class="panel" id="panel-sql">
+      <p class="intro">Interrogez vos fichiers en SQL (dialecte SQLite). Chaque fichier est une table dont le nom figure ci-dessous ; cliquez sur un nom pour l'insérer. Les noms de colonnes contenant des espaces ou accents s'écrivent entre guillemets doubles.</p>
+      <div class="card">
+        <h3>Tables disponibles</h3>
+        <div id="sq-tables" class="sql-tables"></div>
+      </div>
+      <div class="card">
+        <label>Requête
+          <textarea id="sq-query" rows="7" spellcheck="false" placeholder="SELECT ville, COUNT(*) AS nombre FROM clients GROUP BY ville ORDER BY nombre DESC"></textarea>
+        </label>
+        <div class="actions tight" id="sq-examples"></div>
+        <details class="help">
+          <summary>Aide et fonctions disponibles</summary>
+          <ul>
+            <li>Toutes les valeurs sont du texte. Pour calculer, utilisez <code>num(colonne)</code> qui comprend « 1 234,5 » : <code>SUM(num(montant))</code>, <code>WHERE num(prix) &gt; 100</code>.</li>
+            <li><code>date_iso(colonne)</code> convertit « 31/12/2024 » en « 2024-12-31 » pour trier ou comparer des dates.</li>
+            <li><code>sans_accents(colonne)</code> renvoie la valeur en minuscules sans accents.</li>
+            <li><code>colonne REGEXP '^(Paris|Lyon)$'</code> teste une expression régulière.</li>
+            <li>Jointures : <code>SELECT * FROM a JOIN b ON a.id = b."id client"</code>. Seules les requêtes de lecture sont acceptées.</li>
+          </ul>
+        </details>
+        <label>Nom du fichier résultat (facultatif) <input id="sq-name" placeholder="resultat_sql.csv"></label>
+      </div>
+      <div class="actions"><button class="btn primary" id="sq-run">Exécuter (Ctrl + Entrée)</button></div>
+      <div id="sq-result"></div>
+    </section>
+
+    <!-- Recettes -->
+    <section class="panel" id="panel-recipes">
+      <p class="intro">Une recette enregistre une suite d'opérations (colonnes, tri, doublons, filtre, nettoyage) pour la rejouer sur de nouveaux fichiers. Pour en créer une, appliquez vos opérations à un fichier puis enregistrez le résultat comme recette. Les recettes sont conservées entre deux démarrages.</p>
+      <div class="card">
+        <h3>Enregistrer une recette</h3>
+        <label>À partir du fichier <select id="rc-from"></select></label>
+        <ol id="rc-preview" class="steps"></ol>
+        <div class="grid2">
+          <label>Nom de la recette <input id="rc-name" placeholder="ex. Nettoyage export CRM"></label>
+          <label>Description (facultative) <input id="rc-desc"></label>
+        </div>
+        <div class="actions tight">
+          <button class="btn primary" id="rc-save">Enregistrer</button>
+          <label class="btn" for="rc-import">Importer une recette (.json)</label>
+          <input type="file" id="rc-import" accept=".json,application/json" hidden>
+        </div>
+      </div>
+      <div id="rc-list"></div>
     </section>
   </main>
 </div>
