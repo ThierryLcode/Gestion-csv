@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestion CSV</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Gestion CSV</h1>
+  <span class="subtitle">Fusionner · Découper · Joindre · Filtrer</span>
+</header>
+
+<div class="layout">
+  <!-- ===================== Espace de travail ===================== -->
+  <aside class="sidebar">
+    <section class="card">
+      <h2>Importer</h2>
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept=".csv,.tsv,.txt,text/csv" multiple hidden>
+        <strong>Déposez vos fichiers ici</strong>
+        <span>ou cliquez pour parcourir</span>
+      </label>
+      <div class="grid2">
+        <label>Séparateur
+          <select id="imp-delim">
+            <option value="auto">Détection auto</option>
+            <option value=",">Virgule ( , )</option>
+            <option value=";">Point-virgule ( ; )</option>
+            <option value="tab">Tabulation</option>
+            <option value="|">Barre verticale ( | )</option>
+            <option value=":">Deux-points ( : )</option>
+            <option value="space">Espace</option>
+            <option value="custom">Autre…</option>
+          </select>
+        </label>
+        <label>Encodage
+          <select id="imp-enc">
+            <option value="auto">Détection auto</option>
+            <option value="utf-8">UTF-8</option>
+            <option value="windows-1252">Windows-1252 (Excel)</option>
+            <option value="iso-8859-15">ISO-8859-15</option>
+            <option value="iso-8859-1">ISO-8859-1</option>
+            <option value="utf-16le">UTF-16 LE</option>
+          </select>
+        </label>
+      </div>
+      <label id="imp-delim-custom-wrap" hidden>Caractère séparateur
+        <input id="imp-delim-custom" maxlength="1" placeholder="ex. ~">
+      </label>
+      <label class="check"><input type="checkbox" id="imp-headers" checked> La première ligne contient les en-têtes</label>
+      <label class="check"><input type="checkbox" id="imp-trim"> Supprimer les espaces autour des valeurs</label>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Fichiers</h2>
+        <button class="link danger" id="clear-all" title="Retirer tous les fichiers">Tout effacer</button>
+      </div>
+      <p class="hint" id="empty-files">Aucun fichier. Importez un CSV pour commencer : les résultats des opérations apparaîtront aussi ici et pourront être réutilisés.</p>
+      <ul class="file-list" id="file-list"></ul>
+    </section>
+  </aside>
+
+  <!-- ===================== Zone principale ===================== -->
+  <main class="main">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="preview">Aperçu &amp; export</button>
+      <button class="tab" data-tab="merge">Fusionner</button>
+      <button class="tab" data-tab="split">Découper</button>
+      <button class="tab" data-tab="join">Joindre</button>
+      <button class="tab" data-tab="filter">Filtrer</button>
+    </nav>
+
+    <div id="message" class="message" hidden></div>
+
+    <!-- Aperçu -->
+    <section class="panel active" id="panel-preview">
+      <div class="toolbar">
+        <label>Fichier <select id="pv-file" class="file-select"></select></label>
+        <span id="pv-meta" class="meta"></span>
+      </div>
+      <details class="card export" open>
+        <summary>Options d'export</summary>
+        <div class="grid4">
+          <label>Séparateur
+            <select id="ex-delim">
+              <option value="source">Identique à la source</option>
+              <option value=",">Virgule ( , )</option>
+              <option value=";">Point-virgule ( ; )</option>
+              <option value="tab">Tabulation</option>
+              <option value="|">Barre verticale ( | )</option>
+            </select>
+          </label>
+          <label>Encodage
+            <select id="ex-enc">
+              <option value="utf-8">UTF-8</option>
+              <option value="utf-8-bom">UTF-8 avec BOM (Excel)</option>
+              <option value="windows-1252">Windows-1252</option>
+              <option value="iso-8859-15">ISO-8859-15</option>
+            </select>
+          </label>
+          <label>Guillemets
+            <select id="ex-quote">
+              <option value="necessary">Si nécessaire</option>
+              <option value="always">Toujours</option>
+            </select>
+          </label>
+          <label>Fin de ligne
+            <select id="ex-eol">
+              <option value="lf">LF (Unix, Mac)</option>
+              <option value="crlf">CRLF (Windows)</option>
+            </select>
+          </label>
+        </div>
+        <label class="check"><input type="checkbox" id="ex-headers" checked> Inclure la ligne d'en-têtes</label>
+        <p class="hint">Ces options s'appliquent à tous les téléchargements (fichiers et archives ZIP).</p>
+      </details>
+      <div class="actions"><a class="btn primary" id="pv-download" href="#">Télécharger le CSV</a></div>
+      <div class="table-wrap"><table id="pv-table" class="data"></table></div>
+      <div class="pager">
+        <button class="btn" id="pv-prev">◀ Précédent</button>
+        <span id="pv-range"></span>
+        <button class="btn" id="pv-next">Suivant ▶</button>
+      </div>
+    </section>
+
+    <!-- Fusion -->
+    <section class="panel" id="panel-merge">
+      <p class="intro">Empile les lignes de plusieurs fichiers dans un seul fichier. Cochez les fichiers dans l'ordre souhaité.</p>
+      <div class="card">
+        <h3>Fichiers à fusionner</h3>
+        <div id="mg-files" class="checklist"></div>
+      </div>
+      <div class="card">
+        <h3>Alignement des colonnes</h3>
+        <div class="radios">
+          <label class="check"><input type="radio" name="mg-mode" value="union" checked> <span><b>Union</b> — toutes les colonnes ; les cellules absentes restent vides</span></label>
+          <label class="check"><input type="radio" name="mg-mode" value="intersection"> <span><b>Intersection</b> — uniquement les colonnes communes à tous les fichiers</span></label>
+          <label class="check"><input type="radio" name="mg-mode" value="strict"> <span><b>Stricte</b> — erreur si les colonnes diffèrent</span></label>
+          <label class="check"><input type="radio" name="mg-mode" value="position"> <span><b>Par position</b> — ignore les noms, aligne colonne 1 avec colonne 1…</span></label>
+        </div>
+        <label class="check"><input type="checkbox" id="mg-source"> Ajouter une colonne indiquant le fichier d'origine</label>
+        <label id="mg-source-name-wrap" hidden>Nom de cette colonne <input id="mg-source-name" value="fichier_source"></label>
+        <label class="check"><input type="checkbox" id="mg-dedupe"> Supprimer les lignes en double</label>
+        <label>Nom du fichier résultat (facultatif) <input id="mg-name" placeholder="fusion.csv"></label>
+      </div>
+      <div class="actions"><button class="btn primary" id="mg-run">Fusionner</button></div>
+    </section>
+
+    <!-- Découpage -->
+    <section class="panel" id="panel-split">
+      <p class="intro">Crée un fichier par valeur (ou combinaison de valeurs) des colonnes choisies.</p>
+      <div class="card">
+        <label>Fichier à découper <select id="sp-file" class="file-select"></select></label>
+        <h3>Colonnes de découpage</h3>
+        <div id="sp-cols" class="checklist cols"></div>
+        <p class="hint" id="sp-estimate"></p>
+        <label class="check"><input type="checkbox" id="sp-remove"> Retirer ces colonnes des fichiers produits</label>
+      </div>
+      <div class="actions"><button class="btn primary" id="sp-run">Découper</button></div>
+      <div id="sp-result" class="card" hidden></div>
+    </section>
+
+    <!-- Jointure -->
+    <section class="panel" id="panel-join">
+      <p class="intro">Associe les lignes de deux fichiers dont les colonnes clés ont les mêmes valeurs.</p>
+      <div class="card grid2">
+        <label>Fichier de gauche <select id="jn-left" class="file-select"></select></label>
+        <label>Fichier de droite <select id="jn-right" class="file-select"></select></label>
+      </div>
+      <div class="card">
+        <h3>Colonnes de correspondance</h3>
+        <div id="jn-keys"></div>
+        <button class="btn" id="jn-add-key">+ Ajouter une colonne clé</button>
+      </div>
+      <div class="card">
+        <h3>Type de jointure</h3>
+        <div class="join-kinds" id="jn-kinds"></div>
+        <div class="grid2">
+          <label class="check"><input type="checkbox" id="jn-ci"> Ignorer la casse (A = a)</label>
+          <label class="check"><input type="checkbox" id="jn-trim" checked> Ignorer les espaces autour des clés</label>
+        </div>
+        <div class="grid2">
+          <label>Suffixe des colonnes de droite en doublon <input id="jn-suffix" value="_2"></label>
+          <label>Nom du fichier résultat (facultatif) <input id="jn-name" placeholder="jointure.csv"></label>
+        </div>
+      </div>
+      <div class="actions"><button class="btn primary" id="jn-run">Joindre</button></div>
+    </section>
+
+    <!-- Filtre -->
+    <section class="panel" id="panel-filter">
+      <p class="intro">Conserve uniquement les lignes qui respectent les conditions.</p>
+      <div class="card">
+        <label>Fichier à filtrer <select id="ft-file" class="file-select"></select></label>
+        <div class="radios inline">
+          <label class="check"><input type="radio" name="ft-combine" value="all" checked> Toutes les conditions (ET)</label>
+          <label class="check"><input type="radio" name="ft-combine" value="any"> Au moins une condition (OU)</label>
+        </div>
+      </div>
+      <div id="ft-conditions"></div>
+      <button class="btn" id="ft-add">+ Ajouter une condition</button>
+      <div class="card">
+        <label>Nom du fichier résultat (facultatif) <input id="ft-name" placeholder="filtre.csv"></label>
+      </div>
+      <div class="actions"><button class="btn primary" id="ft-run">Filtrer</button></div>
+    </section>
+  </main>
+</div>
+
+<template id="tpl-condition">
+  <div class="card condition">
+    <div class="cond-row">
+      <label>Colonne <select class="c-col"></select></label>
+      <label>Condition
+        <select class="c-op">
+          <option value="in">est égal à l'une des valeurs</option>
+          <option value="not_in">n'est égal à aucune des valeurs</option>
+          <option value="contains">contient</option>
+          <option value="not_contains">ne contient pas</option>
+          <option value="starts_with">commence par</option>
+          <option value="ends_with">se termine par</option>
+          <option value="empty">est vide</option>
+          <option value="not_empty">n'est pas vide</option>
+          <option value="gt">&gt; (supérieur à)</option>
+          <option value="ge">≥ (supérieur ou égal)</option>
+          <option value="lt">&lt; (inférieur à)</option>
+          <option value="le">≤ (inférieur ou égal)</option>
+          <option value="between">est compris entre</option>
+          <option value="regex">correspond à l'expression régulière</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" class="c-case"> Respecter la casse</label>
+      <button class="link danger c-remove" title="Supprimer la condition">✕</button>
+    </div>
+    <div class="c-values"></div>
+  </div>
+</template>
+
+<script src="/app.js"></script>
+</body>
+</html>
