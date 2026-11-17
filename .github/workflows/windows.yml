@@ -1,12 +1,13 @@
 # Compile l'application de bureau sous Windows avec le compilateur Microsoft (MSVC)
 # et publie l'exécutable :
-#  - à chaque envoi ou pull request : en « artefact » téléchargeable depuis l'onglet Actions ;
+#  - à chaque envoi sur main et à chaque pull request : en « artefact » téléchargeable
+#    depuis l'onglet Actions ;
 #  - sur une étiquette v* (ex. v0.2.0) : en pièce jointe d'une version GitHub.
 name: Application Windows
 
 on:
   push:
-    branches: [main, "claude/**"]
+    branches: [main]
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
