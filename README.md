@@ -24,10 +24,24 @@ Double-cliquez sur `gestion-csv-bureau.exe` : aucune installation, aucune DLL à
 - Rendu Direct3D 12 / Vulkan ; si la carte graphique ne le permet pas (machine virtuelle, bureau à distance, ancien pilote), le programme se relance automatiquement en OpenGL. Pour forcer OpenGL : variable d'environnement `GESTION_CSV_RENDU=opengl`.
 - Dossier de données modifiable avec la variable `GESTION_CSV_DATA` ; mémoire de tri avec `SORT_MEMORY_MB`.
 
+### Si Windows bloque le lancement
+
+L'exécutable n'est pas signé numériquement (il faudrait un certificat de signature de code, payant). Selon le message affiché :
+
+- **« Windows a protégé votre ordinateur » (SmartScreen)** : cliquez sur « Informations complémentaires » puis « Exécuter quand même ». Pour ne plus voir ce message : clic droit sur le fichier `.zip` téléchargé (avant de l'extraire) ou sur `GestionCSV.exe` → Propriétés → cochez « Débloquer » → OK.
+- **L'antivirus (Microsoft Defender) supprime ou met en quarantaine le fichier** : il s'agit d'un faux positif fréquent pour les programmes non signés. Sécurité Windows → Protection contre les virus et menaces → Historique de protection → « Restaurer » / « Autoriser sur l'appareil ». Préférez l'exécutable compilé par GitHub avec le compilateur Microsoft (voir ci-dessous), moins souvent signalé.
+- **« Une partie de cette application a été bloquée » (Smart App Control, Windows 11)** : ce contrôle n'accepte que les programmes signés ou connus de Microsoft et ne propose pas d'exception. Solutions : compiler le programme vous-même sur votre PC (voir ci-dessous), ou désactiver Smart App Control (Sécurité Windows → Contrôle des applications et du navigateur ; la réactivation nécessite de réinstaller Windows).
+
+L'exécutable contient une icône, un manifeste d'application (exécution sans droits d'administrateur) et des informations de version visibles dans Propriétés → Détails.
+
+### Exécutable compilé par GitHub
+
+Le workflow `.github/workflows/windows.yml` compile l'application sous Windows avec le compilateur Microsoft (MSVC) à chaque envoi : l'exécutable est téléchargeable dans l'onglet **Actions** du dépôt (artefact « GestionCSV-windows-x64 »). Une étiquette `v*` (ex. `git tag v0.2.0 && git push --tags`) publie en plus une version GitHub avec le fichier ZIP.
+
 ### Compiler
 
 ```bash
-# Sous Windows (Rust installé via rustup)
+# Sous Windows (Rust installé via https://rustup.rs, avec les « Build Tools » Visual Studio)
 cargo build --release -p gestion-csv-bureau
 # -> target\release\gestion-csv-bureau.exe
 

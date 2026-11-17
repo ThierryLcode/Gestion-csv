@@ -5,3 +5,8 @@
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
 rustflags = ["-C", "target-feature=+crt-static"]
+
+# Exécutable Windows autonome avec le compilateur Microsoft (MSVC) :
+# pas besoin d'installer les bibliothèques Visual C++ sur le poste.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

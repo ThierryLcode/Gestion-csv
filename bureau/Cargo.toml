@@ -11,3 +11,6 @@ egui_extras = "0.37"
 moteur.workspace = true
 rfd = "0.18"
 serde_json.workspace = true
+
+[build-dependencies]
+embed-resource = "3"
