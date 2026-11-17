@@ -1,0 +1,17 @@
+[workspace]
+resolver = "3"
+members = ["moteur", "web", "bureau"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+
+[workspace.dependencies]
+moteur = { package = "gestion-csv-moteur", path = "moteur" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true

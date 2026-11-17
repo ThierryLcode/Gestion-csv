@@ -1,0 +1,59 @@
+# Compile l'application de bureau sous Windows avec le compilateur Microsoft (MSVC)
+# et publie l'exécutable :
+#  - à chaque envoi sur main et à chaque pull request : en « artefact » téléchargeable
+#    depuis l'onglet Actions ;
+#  - sur une étiquette v* (ex. v0.2.0) : en pièce jointe d'une version GitHub.
+name: Application Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust stable
+        run: rustup update stable --no-self-update && rustup default stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-msvc-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-msvc-
+
+      - name: Tests du moteur
+        run: cargo test -p gestion-csv-moteur
+
+      - name: Compilation de l'application de bureau
+        run: cargo build --release -p gestion-csv-bureau
+
+      - name: Préparation du livrable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force livrable | Out-Null
+          Copy-Item target/release/gestion-csv-bureau.exe livrable/GestionCSV.exe
+          Compress-Archive -Path livrable/GestionCSV.exe -DestinationPath GestionCSV-windows-x64.zip -Force
+          Get-FileHash livrable/GestionCSV.exe -Algorithm SHA256 | Format-List
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GestionCSV-windows-x64
+          path: livrable/GestionCSV.exe
+
+      - name: Publication de la version
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" GestionCSV-windows-x64.zip --title "Gestion CSV ${{ github.ref_name }}" --generate-notes
