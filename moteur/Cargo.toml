@@ -1,0 +1,19 @@
+[package]
+name = "gestion-csv-moteur"
+description = "Moteur de traitement de fichiers CSV en flux (partagé par l'interface Web et l'application de bureau)"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "moteur"
+
+[dependencies]
+csv = "1.4.0"
+encoding_rs = "0.8.44"
+encoding_rs_io = "0.1.8"
+regex = "1.13.1"
+rusqlite = { version = "0.43.0", features = ["bundled", "functions"] }
+serde.workspace = true
+serde_json.workspace = true
+uuid = { version = "1.29.2", features = ["v4"] }
+zip = { version = "9.6.0", default-features = false, features = ["deflate-flate2-zlib-rs"] }

@@ -1,13 +1,50 @@
 # Gestion CSV
 
-Application Web écrite en Rust pour manipuler des fichiers CSV, y compris très volumineux : fusionner, découper, joindre, filtrer, trier, dédoublonner, nettoyer, comparer deux versions, profiler, interroger en SQL et rejouer des suites d'opérations (recettes).
+Application écrite en Rust pour manipuler des fichiers CSV, y compris très volumineux : fusionner, découper, joindre, filtrer, trier, dédoublonner, nettoyer, comparer deux versions, profiler, interroger en SQL et rejouer des suites d'opérations (recettes).
 
-Le serveur ([axum](https://github.com/tokio-rs/axum)) embarque l'interface (HTML/CSS/JS sans dépendance) et SQLite dans un binaire unique. Les fichiers ne quittent jamais la machine.
+Deux interfaces, un seul moteur :
 
-## Démarrage
+| | Application de bureau | Interface Web |
+|---|---|---|
+| Programme | `gestion-csv-bureau` (`.exe` sous Windows) | `gestion-csv` (serveur local) |
+| Lancement | double-clic, rien d'autre à installer | ouvrir http://127.0.0.1:8080 dans un navigateur |
+| Technologie | fenêtre native [egui](https://github.com/emilk/egui) | [axum](https://github.com/tokio-rs/axum) + HTML/CSS/JS embarqués |
+| Données | `%LOCALAPPDATA%\GestionCSV` (Windows) | `donnees/` |
+
+Les fichiers ne quittent jamais la machine. Les recettes ont le même format JSON dans les deux interfaces.
+
+## Application de bureau (Windows)
+
+Double-cliquez sur `gestion-csv-bureau.exe` : aucune installation, aucune DLL à fournir. Vous pouvez aussi glisser des fichiers CSV sur la fenêtre (ou sur l'icône du programme, ou utiliser « Ouvrir avec ») pour les importer.
+
+- Mêmes onglets que l'interface Web ; les résultats s'enregistrent avec « Enregistrer sous… » selon les options d'export.
+- L'aperçu est un tableau virtuel : on fait défiler (ou on saute directement à une ligne) dans des millions de lignes, seules les lignes visibles sont lues sur le disque.
+- Les traitements tournent en arrière-plan avec un indicateur d'attente ; la fenêtre reste réactive.
+- Thème clair, sombre ou celui du système ; zoom avec Ctrl + / Ctrl −.
+- Rendu Direct3D 12 / Vulkan ; si la carte graphique ne le permet pas (machine virtuelle, bureau à distance, ancien pilote), le programme se relance automatiquement en OpenGL. Pour forcer OpenGL : variable d'environnement `GESTION_CSV_RENDU=opengl`.
+- Dossier de données modifiable avec la variable `GESTION_CSV_DATA` ; mémoire de tri avec `SORT_MEMORY_MB`.
+
+### Compiler
 
 ```bash
-cargo run --release
+# Sous Windows (Rust installé via rustup)
+cargo build --release -p gestion-csv-bureau
+# -> target\release\gestion-csv-bureau.exe
+
+# Depuis Linux (compilation croisée, configurée dans .cargo/config.toml)
+rustup target add x86_64-pc-windows-gnu
+sudo apt install gcc-mingw-w64-x86-64
+cargo build --release -p gestion-csv-bureau --target x86_64-pc-windows-gnu
+# -> target/x86_64-pc-windows-gnu/release/gestion-csv-bureau.exe
+
+# Linux / macOS (le même code fonctionne)
+cargo run --release -p gestion-csv-bureau
+```
+
+## Interface Web
+
+```bash
+cargo run --release -p gestion-csv
 # puis ouvrir http://127.0.0.1:8080
 ```
 
@@ -19,7 +56,7 @@ cargo run --release
 | `SORT_MEMORY_MB` | `256`       | Mémoire utilisée par bloc lors des tris externes |
 | `MAX_UPLOAD_MB`  | `0`         | Taille maximale d'un envoi (`0` = illimitée) |
 
-Tests : `cargo test`
+Tests : `cargo test --workspace`
 
 ## Fonctionnalités
 
@@ -111,15 +148,19 @@ Exemple d'étape (format également utilisé dans les recettes JSON) :
 ## Structure
 
 ```
-src/main.rs     démarrage et configuration
-src/api.rs      routes HTTP
-src/csvio.rs    lecture/écriture en flux, import, export, détection séparateur et encodage
-src/text.rs     nombres français, comparaison sans accents, tri naturel, dates
-src/sort.rs     tri externe
-src/steps.rs    étapes sur un fichier : colonnes, doublons, filtre, nettoyage
-src/multi.rs    fusion, découpage, jointure, comparaison
-src/profile.rs  profil et valeurs distinctes
-src/sql.rs      moteur SQL (SQLite embarqué)
-src/store.rs    espace de travail et recettes
-static/         interface Web (embarquée dans le binaire)
+moteur/   bibliothèque partagée (gestion-csv-moteur)
+  src/csvio.rs    lecture/écriture en flux, import, export, détection séparateur et encodage
+  src/text.rs     nombres français, comparaison sans accents, tri naturel, dates
+  src/sort.rs     tri externe
+  src/steps.rs    étapes sur un fichier : colonnes, doublons, filtre, nettoyage
+  src/multi.rs    fusion, découpage, jointure, comparaison
+  src/profile.rs  profil et valeurs distinctes
+  src/sql.rs      moteur SQL (SQLite embarqué)
+  src/store.rs    espace de travail et recettes
+  src/service.rs  opérations de haut niveau utilisées par les deux interfaces
+web/      interface Web (gestion-csv) : src/api.rs, static/
+bureau/   application de bureau (gestion-csv-bureau)
+  src/app.rs      fenêtre, tâches en arrière-plan, fichiers, aperçu virtuel, export
+  src/panels.rs   onglets d'opérations
+  src/widgets.rs  composants et descriptions des étapes
 ```

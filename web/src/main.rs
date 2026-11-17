@@ -1,12 +1,4 @@
 mod api;
-mod csvio;
-mod multi;
-mod profile;
-mod sort;
-mod sql;
-mod steps;
-mod store;
-mod text;
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -24,7 +16,7 @@ async fn main() {
     let max_upload_mb = env_num("MAX_UPLOAD_MB", 0);
     let sort_memory_mb = env_num("SORT_MEMORY_MB", 256).max(16);
 
-    let state = store::AppState::open(&data_dir, sort_memory_mb * 1024 * 1024).unwrap_or_else(|e| {
+    let state = moteur::AppState::open(&data_dir, sort_memory_mb * 1024 * 1024).unwrap_or_else(|e| {
         eprintln!("Erreur : {e}");
         std::process::exit(1);
     });
