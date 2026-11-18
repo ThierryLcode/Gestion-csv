@@ -76,6 +76,7 @@ object Catalogue {
 
     val mesures = listOf(
         Preset("Législation actuelle", "Aucune mesure : réforme 2023 suspendue jusqu'en 2028 puis reprise", Mesures()),
+        Preset("Départ à 60 ans", "Âge légal ramené à 60 ans (6 mois par an à partir de 2027), durée d'assurance de 43 ans maintenue : âge moyen de départ réduit d'environ 2,3 ans (ordre de grandeur)", Mesures(decalageAge = -2.3, anneeDebutAge = 2027, rythmeAge = 0.5)),
         Preset("Retour à 62 ans", "Abrogation de la réforme de 2023 : âge moyen de départ réduit d'environ 1 an (ordre de grandeur)", Mesures(decalageAge = -1.0, anneeDebutAge = 2027)),
         Preset("Âge légal porté à 65 ans", "+3 mois par génération à partir de 2033 ; effet sur l'âge effectif ≈ 0,8 an", Mesures(decalageAge = 0.8, anneeDebutAge = 2033)),
         Preset("Âge légal porté à 66 ans", "+3 mois par génération à partir de 2033 ; effet sur l'âge effectif ≈ 1,6 an", Mesures(decalageAge = 1.6, anneeDebutAge = 2033)),

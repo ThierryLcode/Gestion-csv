@@ -81,6 +81,16 @@ class ModeleTest {
     }
 
     @Test
+    fun departA60AnsCouteDavantageQueLeRetourA62Ans() {
+        fun preset(nom: String) = Catalogue.mesures.first { it.libelle == nom }.valeur
+        val a60 = ModeleRetraites.projeter(Scenario(mesures = preset("Départ à 60 ans")))
+        val a62 = ModeleRetraites.projeter(Scenario(mesures = preset("Retour à 62 ans")))
+        assertTrue(a60.en(2040).soldePib < a62.en(2040).soldePib)
+        assertEquals(reference.en(2040).ageMoyenDepart - 2.3, a60.en(2040).ageMoyenDepart, 1e-9)
+        assertTrue(a60.en(2027).ageMoyenDepart > reference.en(2027).ageMoyenDepart - 0.6)
+    }
+
+    @Test
     fun leviersEquilibrentLeSysteme() {
         val l = Equilibre.leviers(Scenario())
         assertEquals(-l.soldePib / 0.23, l.pointsCotisation, 1e-9)

@@ -1,5 +1,7 @@
 # Projection retraites (application Android)
 
+*Développeur : Thierry LORGEOU*
+
 Application Android qui projette, de 2025 à 2070, l'effet de mesures sur l'équilibre du système de retraite français, à partir des hypothèses démographiques et économiques du **Conseil d'orientation des retraites (COR)**, rapport annuel de juin 2026 (projections de population Insee 2026).
 
 ## Ce que l'on peut faire
@@ -7,11 +9,11 @@ Application Android qui projette, de 2025 à 2070, l'effet de mesures sur l'équ
 | Onglet | Contenu |
 |---|---|
 | **Résultats** | Solde du système (% du PIB et Md€ constants), dépenses et ressources, cotisants par retraité, pension moyenne relative, âge moyen de départ. Chaque courbe compare *avec* et *sans* mesures ; les losanges ◇ sont les valeurs publiées par le COR. Effort nécessaire pour équilibrer en 2070 (cotisations, pensions ou âge). Export CSV. |
-| **Mesures** | Mesures types (retour à 62 ans, âge légal à 65/66 ans, année blanche, sous-indexation, indexation sur les salaires, +1 point de cotisation, baisse des nouvelles pensions) et réglages combinables : décalage de l'âge de départ et rythme, revalorisation des pensions, cotisations, calcul des nouvelles pensions. |
+| **Mesures** | Mesures types (départ à 60 ans, retour à 62 ans, âge légal à 65/66 ans, année blanche, sous-indexation, indexation sur les salaires, +1 point de cotisation, baisse des nouvelles pensions) et réglages combinables : décalage de l'âge de départ et rythme, revalorisation des pensions, cotisations, calcul des nouvelles pensions. |
 | **Capitalisation** | Pilier par capitalisation (x points de cotisation, en complément ou en substitution des cotisations de répartition, avec coût de transition) et fonds de réserve (capital initial, dotations, placement des excédents, couverture des déficits jusqu'à épuisement). Rendement réel réglable (2 % par défaut). Graphiques des actifs, des rentes, de la pension totale et du solde après fonds. |
 | **Hypothèses** | Scénario central Insee 2026 / COR et variantes (fécondité 1,2 ou 1,7 ; solde migratoire +70 000 ou +230 000 ; espérance de vie ; anciennes hypothèses Insee 2021), productivité (0,4 / 0,7 / 1,0 %), chômage, convention de ressources. Import d'une pyramide des âges au format CSV. |
 | **Démographie** | Pyramide des âges 2025 comparée à une année au choix, rapport 20-64 / 65 ans ou plus, population par grand groupe d'âge, naissances, espérance de vie. |
-| **Méthode** | Sources, méthode et limites. |
+| **Méthode** | À propos (développeur, version), sources, méthode et limites. |
 
 Tous les calculs sont faits sur le téléphone ; l'application n'utilise pas le réseau.
 

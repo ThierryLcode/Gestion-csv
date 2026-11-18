@@ -68,5 +68,5 @@ jobs:
           else
             gh release create "$tag" livrable/ProjectionRetraites.apk --target "$GITHUB_SHA" \
               --title "Projection retraites $version" \
-              --notes "APK Android de l'application Projection retraites (hypothèses COR juin 2026). Ouvrez ce lien depuis le téléphone, téléchargez ProjectionRetraites.apk puis installez-le."
+              --notes "APK Android de l'application Projection retraites (hypothèses COR juin 2026), développée par Thierry LORGEOU. Ouvrez ce lien depuis le téléphone, téléchargez ProjectionRetraites.apk puis installez-le."
           fi

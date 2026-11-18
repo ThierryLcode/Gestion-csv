@@ -139,7 +139,7 @@ fun EcranMesures(etat: EtatUi, onMesures: (Mesures) -> Unit) = Defilement {
     }
 
     Section("Âge de départ", "Décalage de l'âge moyen effectif de départ par rapport à la législation actuelle (≈ 64,6 ans à terme).") {
-        Curseur("Décalage", m.decalageAge, -3.0, 4.0, 0.1, { signe(it) + " an" }) { onMesures(m.copy(decalageAge = it)) }
+        Curseur("Décalage", m.decalageAge, -5.0, 4.0, 0.1, { signe(it) + " an" }) { onMesures(m.copy(decalageAge = it)) }
         Curseur("À partir de", m.anneeDebutAge.toDouble(), 2026.0, 2045.0, 1.0, { it.toInt().toString() }) {
             onMesures(m.copy(anneeDebutAge = it.toInt()))
         }
@@ -475,6 +475,11 @@ fun EcranDemographie(etat: EtatUi) = Defilement {
 
 @Composable
 fun EcranMethode() = Defilement {
+    Section("À propos") {
+        Text("Projection retraites", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Paragraphe("Développeur : Thierry LORGEOU")
+        Paragraphe("Version ${fr.retraites.app.BuildConfig.VERSION_NAME}")
+    }
     Section("Ce que fait l'application") {
         Paragraphe(
             "Elle projette, année par année de 2025 à 2070, la population française par sexe et âge détaillé, " +
