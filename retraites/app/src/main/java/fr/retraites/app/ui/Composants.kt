@@ -12,6 +12,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,12 +46,12 @@ class Echelle(val unite: fr.retraites.app.Unite) {
 @Composable
 fun SelecteurUnite(unite: fr.retraites.app.Unite, onChange: (fr.retraites.app.Unite) -> Unit) {
     val options = listOf(fr.retraites.app.Unite.POURCENT_PIB to "% du PIB", fr.retraites.app.Unite.MONTANT to "Montants (Md€)")
-    androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         options.forEachIndexed { i, (u, libelle) ->
-            androidx.compose.material3.SegmentedButton(
+            SegmentedButton(
                 selected = unite == u,
                 onClick = { onChange(u) },
-                shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, options.size),
+                shape = SegmentedButtonDefaults.itemShape(i, options.size),
             ) { Text(libelle) }
         }
     }
