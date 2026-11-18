@@ -178,3 +178,7 @@ bureau/   application de bureau (gestion-csv-bureau)
   src/panels.rs   onglets d'opérations
   src/widgets.rs  composants et descriptions des étapes
 ```
+
+## Autre projet du dépôt : Projection retraites (Android)
+
+Le dossier [`retraites/`](retraites/README.md) contient une application Android indépendante qui projette l'impact de mesures sur l'équilibre du système de retraite à partir des hypothèses démographiques du COR (rapport de juin 2026).

@@ -1,0 +1,59 @@
+# Application Android « Projection retraites » (dossier retraites/) :
+#  - teste le modèle de projection et compile l'APK à chaque envoi touchant retraites/ ;
+#  - l'APK est téléchargeable dans l'onglet Actions (artefact « ProjectionRetraites-apk ») ;
+#  - une étiquette retraites-v* (ex. retraites-v0.1.0) publie en plus une version GitHub avec l'APK.
+name: Application Android
+
+on:
+  push:
+    paths:
+      - "retraites/**"
+      - ".github/workflows/android.yml"
+    tags: ["retraites-v*"]
+  pull_request:
+    paths:
+      - "retraites/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: retraites
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Tests du modèle
+        run: ./gradlew --no-daemon :modele:test
+
+      - name: Compilation de l'APK
+        run: ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Préparation du livrable
+        run: |
+          mkdir -p livrable
+          cp app/build/outputs/apk/release/app-release.apk livrable/ProjectionRetraites.apk
+          sha256sum livrable/ProjectionRetraites.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ProjectionRetraites-apk
+          path: retraites/livrable/ProjectionRetraites.apk
+
+      - name: Publication de la version
+        if: startsWith(github.ref, 'refs/tags/retraites-v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" livrable/ProjectionRetraites.apk --title "Projection retraites ${{ github.ref_name }}" --generate-notes
