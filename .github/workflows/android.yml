@@ -1,7 +1,7 @@
 # Application Android « Projection retraites » (dossier retraites/) :
 #  - teste le modèle de projection et compile l'APK à chaque envoi touchant retraites/ ;
 #  - l'APK est téléchargeable dans l'onglet Actions (artefact « ProjectionRetraites-apk ») ;
-#  - une étiquette retraites-v* (ex. retraites-v0.1.0) publie en plus une version GitHub avec l'APK.
+#  - il est aussi publié dans une version GitHub retraites-v<versionName> (lien direct pour le téléphone).
 name: Application Android
 
 on:
@@ -53,8 +53,20 @@ jobs:
           name: ProjectionRetraites-apk
           path: retraites/livrable/ProjectionRetraites.apk
 
+      # Publication d'une version GitHub avec l'APK, sur chaque envoi (hors pull request) :
+      # étiquette retraites-v<versionName> créée par GitHub ; si elle existe déjà, l'APK est remplacé.
+      # Lien stable : https://github.com/<dépôt>/releases/latest/download/ProjectionRetraites.apk
       - name: Publication de la version
-        if: startsWith(github.ref, 'refs/tags/retraites-v')
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" livrable/ProjectionRetraites.apk --title "Projection retraites ${{ github.ref_name }}" --generate-notes
+        run: |
+          version=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          tag="retraites-v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" livrable/ProjectionRetraites.apk --clobber
+          else
+            gh release create "$tag" livrable/ProjectionRetraites.apk --target "$GITHUB_SHA" \
+              --title "Projection retraites $version" \
+              --notes "APK Android de l'application Projection retraites (hypothèses COR juin 2026). Ouvrez ce lien depuis le téléphone, téléchargez ProjectionRetraites.apk puis installez-le."
+          fi

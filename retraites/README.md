@@ -49,7 +49,8 @@ Fichier CSV (UTF-8) avec une ligne par âge : `âge;hommes;femmes`. Séparateur 
 
 ## Compilation
 
-- **APK prêt à installer** : le workflow `.github/workflows/android.yml` teste le modèle et compile l'APK à chaque envoi modifiant `retraites/`. Téléchargez l'artefact « ProjectionRetraites-apk » dans l'onglet **Actions** (fichier ZIP contenant `ProjectionRetraites.apk`), copiez-le sur le téléphone et ouvrez-le (autorisez l'installation d'applications de source inconnue). Une étiquette `retraites-v*` (ex. `git tag retraites-v0.1.0 && git push --tags`) publie aussi une version GitHub.
+- **Installer depuis le téléphone** : ouvrez https://github.com/ThierryLcode/Gestion-csv/releases/latest/download/ProjectionRetraites.apk dans le navigateur du téléphone, puis touchez le fichier téléchargé (autorisez l'installation depuis le navigateur, puis « Installer quand même » si Play Protect avertit). Android 8.0 ou plus récent.
+- **Publication** : le workflow `.github/workflows/android.yml` teste le modèle, compile l'APK à chaque envoi modifiant `retraites/` et le publie dans la version GitHub `retraites-v<versionName>` (créée si besoin, sinon l'APK y est remplacé). Pour une nouvelle version, augmentez `versionName` et `versionCode` dans `app/build.gradle.kts`. L'APK est aussi disponible en artefact « ProjectionRetraites-apk » dans l'onglet **Actions**.
 - **En local** : Android Studio (ouvrir le dossier `retraites/`), ou en ligne de commande avec un SDK Android : `./gradlew :app:assembleDebug`.
 - **Tests du modèle seuls** (sans SDK Android) : `./gradlew :modele:test`.
 
