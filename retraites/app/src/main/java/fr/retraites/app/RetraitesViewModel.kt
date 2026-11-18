@@ -2,6 +2,7 @@ package fr.retraites.app
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import fr.retraites.modele.Capitalisation
 import fr.retraites.modele.Equilibre
 import fr.retraites.modele.HypothesesDemographiques
 import fr.retraites.modele.HypothesesEconomiques
@@ -27,7 +28,7 @@ import kotlinx.coroutines.withContext
 data class Resultats(
     /** Projection avec les mesures choisies. */
     val avec: Projection,
-    /** Même hypothèses, sans mesure (législation actuelle). */
+    /** Mêmes hypothèses, sans mesure ni capitalisation (législation actuelle). */
     val sans: Projection,
     val leviers: LeviersEquilibre,
 )
@@ -55,6 +56,7 @@ class RetraitesViewModel : ViewModel() {
     fun changerDemographie(d: HypothesesDemographiques) = modifier { it.copy(demographie = d) }
     fun changerEconomie(e: HypothesesEconomiques) = modifier { it.copy(economie = e) }
     fun changerMesures(m: Mesures) = modifier { it.copy(mesures = m) }
+    fun changerCapitalisation(c: Capitalisation) = modifier { it.copy(capitalisation = c) }
 
     private fun modifier(f: (Scenario) -> Scenario) {
         _etat.update { it.copy(scenario = f(it.scenario)) }
@@ -93,7 +95,7 @@ class RetraitesViewModel : ViewModel() {
                 val demo = ModeleDemographique.projeter(scenario.demographie, initiale)
                 Resultats(
                     avec = ModeleRetraites.projeter(scenario, initiale, demo),
-                    sans = ModeleRetraites.projeter(scenario.copy(mesures = Mesures()), initiale, demo),
+                    sans = ModeleRetraites.projeter(scenario.sansMesures(), initiale, demo),
                     leviers = Equilibre.leviers(scenario, initiale = initiale, demographie = demo),
                 )
             }

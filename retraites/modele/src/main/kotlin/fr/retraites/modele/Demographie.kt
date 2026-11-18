@@ -133,6 +133,9 @@ class ProjectionDemographique(
     val esperanceVieFemmes: DoubleArray,
     val esperanceVie65Hommes: DoubleArray,
     val esperanceVie65Femmes: DoubleArray,
+    /** Quotients de mortalité de chaque année, par âge. */
+    val quotientsHommes: List<DoubleArray>,
+    val quotientsFemmes: List<DoubleArray>,
 ) {
     fun pyramide(annee: Int): Pyramide = pyramides[annee - ANNEE_DEBUT]
 }
@@ -167,6 +170,8 @@ object ModeleDemographique {
         val e0f = DoubleArray(nbAnnees)
         val e65h = DoubleArray(nbAnnees)
         val e65f = DoubleArray(nbAnnees)
+        val quotientsH = ArrayList<DoubleArray>(nbAnnees)
+        val quotientsF = ArrayList<DoubleArray>(nbAnnees)
         var courante = initiale.copie()
         pyramides.add(courante)
         val profilF = Fecondite.profil
@@ -176,6 +181,8 @@ object ModeleDemographique {
             val annee = ANNEE_DEBUT + i
             val qH = Mortalite.quotientsPour(Sexe.HOMMES, esperanceVieEn(h, Sexe.HOMMES, annee))
             val qF = Mortalite.quotientsPour(Sexe.FEMMES, esperanceVieEn(h, Sexe.FEMMES, annee))
+            quotientsH.add(qH)
+            quotientsF.add(qF)
             e0h[i] = Mortalite.esperanceVie(qH)
             e0f[i] = Mortalite.esperanceVie(qF)
             e65h[i] = Mortalite.esperanceVie(qH, 65)
@@ -206,6 +213,6 @@ object ModeleDemographique {
             courante = Pyramide(hommes, femmes)
             pyramides.add(courante)
         }
-        return ProjectionDemographique(pyramides, naissances, icf, e0h, e0f, e65h, e65f)
+        return ProjectionDemographique(pyramides, naissances, icf, e0h, e0f, e65h, e65f, quotientsH, quotientsF)
     }
 }

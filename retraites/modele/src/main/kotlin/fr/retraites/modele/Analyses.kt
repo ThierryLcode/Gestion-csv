@@ -87,6 +87,16 @@ object Catalogue {
     )
 }
 
+object CatalogueCapitalisation {
+    val options = listOf(
+        Preset("Aucune", "Système entièrement par répartition", Capitalisation()),
+        Preset("Pilier complémentaire de 2 points", "2 points de cotisation en plus, placés sur des comptes et convertis en rente au départ", Capitalisation(pointsPilier = 2.0)),
+        Preset("Bascule de 2 points vers la capitalisation", "2 points pris sur les cotisations de répartition : moins de ressources tout de suite, moins de droits plus tard", Capitalisation(pointsPilier = 2.0, substitution = true)),
+        Preset("Fonds de réserve : 0,2 % du PIB par an", "Dotation de 2027 à 2039, puis couverture des déficits à partir de 2040", Capitalisation(fondsActif = true, dotationFondsPib = 0.2, anneeDecaissementFonds = 2040)),
+        Preset("Fonds de réserve de 100 Md€", "Capital de 100 Md€ placé dès 2025, mobilisé à partir de 2035", Capitalisation(fondsActif = true, fondsInitialMdEuros = 100.0)),
+    )
+}
+
 object ExportCsv {
     private fun f(x: Double, d: Int) = String.format(Locale.FRANCE, "%.${d}f", x)
 
@@ -99,7 +109,12 @@ object ExportCsv {
             "Dépenses (% PIB)", "Ressources (% PIB)", "Solde (% PIB)", "Solde (Md€ 2025)",
         )
         val sb = StringBuilder()
-        val entete = if (sans == null) colonnes else colonnes + listOf("Dépenses sans mesures (% PIB)", "Solde sans mesures (% PIB)")
+        val capitalisation = listOf(
+            "Cotisations capitalisées (% PIB)", "Actifs capitalisés (% PIB)", "Rentes capitalisées (% PIB)",
+            "Pension relative y c. rentes (%)", "Fonds de réserve (% PIB)", "Fonds de réserve (Md€ 2025)", "Solde après fonds (% PIB)",
+        )
+        val entete = colonnes + capitalisation +
+            if (sans == null) emptyList() else listOf("Dépenses sans mesures (% PIB)", "Solde sans mesures (% PIB)")
         sb.append(entete.joinToString(";")).append('\n')
         for ((i, r) in avec.annees.withIndex()) {
             val v = mutableListOf(
@@ -108,6 +123,8 @@ object ExportCsv {
                 f(r.rapportDemographique, 2), f(r.ageMoyenDepart, 2), f(r.cotisants, 0), f(r.retraites, 0),
                 f(r.rapportCotisantsRetraites, 2), f(r.pensionRelative * 100, 1), f(r.depensesPib, 2),
                 f(r.ressourcesPib, 2), f(r.soldePib, 2), f(r.soldeMdEuros, 1),
+                f(r.cotisationsCapitalisationPib, 2), f(r.actifsCapitalisationPib, 1), f(r.rentesCapitalisationPib, 2),
+                f(r.pensionRelativeTotale * 100, 1), f(r.fondsReservePib, 1), f(r.fondsReserveMdEuros, 1), f(r.soldeApresFondsPib, 2),
             )
             if (sans != null) {
                 v += f(sans.annees[i].depensesPib, 2)

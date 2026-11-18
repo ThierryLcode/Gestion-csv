@@ -72,9 +72,47 @@ data class Mesures(
     val estVide: Boolean get() = this == Mesures()
 }
 
+/**
+ * Capitalisation : pilier de comptes individuels et fonds de réserve collectif.
+ * Les montants sont en euros constants ; le rendement est réel (au-delà de l'inflation).
+ */
+data class Capitalisation(
+    /** Rendement réel annuel des placements (0,02 = 2 %), commun au pilier et au fonds. */
+    val rendementReel: Double = 0.02,
+
+    /** Points de cotisation versés sur des comptes capitalisés. */
+    val pointsPilier: Double = 0.0,
+    val anneeDebutPilier: Int = 2027,
+    /**
+     * false : cotisation en complément (en plus des cotisations actuelles) ;
+     * true : prise sur les cotisations de répartition, qui perd ces ressources tout de suite
+     * et réduit à proportion les droits futurs (coût de transition).
+     */
+    val substitution: Boolean = false,
+
+    /** Fonds de réserve collectif, qui finance les déficits du système par répartition. */
+    val fondsActif: Boolean = false,
+    /** Capital du fonds en 2025 (Md€). */
+    val fondsInitialMdEuros: Double = 0.0,
+    /** Dotation annuelle, en % du PIB, versée de [anneeDebutFonds] à [anneeDecaissementFonds] - 1. */
+    val dotationFondsPib: Double = 0.0,
+    val anneeDebutFonds: Int = 2027,
+    /** Année à partir de laquelle le fonds couvre les déficits (dans la limite de son capital). */
+    val anneeDecaissementFonds: Int = 2035,
+    /** Les excédents éventuels du système alimentent le fonds. */
+    val placerExcedents: Boolean = true,
+) {
+    val pilierActif: Boolean get() = pointsPilier > 0.0
+    val estVide: Boolean get() = !pilierActif && !fondsActif
+}
+
 /** Ensemble complet des paramètres d'une projection. */
 data class Scenario(
     val demographie: HypothesesDemographiques = HypothesesDemographiques(),
     val economie: HypothesesEconomiques = HypothesesEconomiques(),
     val mesures: Mesures = Mesures(),
-)
+    val capitalisation: Capitalisation = Capitalisation(),
+) {
+    /** Mêmes hypothèses, sans mesure ni capitalisation (législation actuelle). */
+    fun sansMesures(): Scenario = copy(mesures = Mesures(), capitalisation = Capitalisation(rendementReel = capitalisation.rendementReel))
+}

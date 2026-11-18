@@ -29,7 +29,9 @@ import fr.retraites.app.EtatUi
 import fr.retraites.app.Resultats
 import fr.retraites.modele.ANNEE_DEBUT
 import fr.retraites.modele.ANNEE_FIN
+import fr.retraites.modele.Capitalisation
 import fr.retraites.modele.Catalogue
+import fr.retraites.modele.CatalogueCapitalisation
 import fr.retraites.modele.ConventionRessources
 import fr.retraites.modele.HypothesesDemographiques
 import fr.retraites.modele.HypothesesEconomiques
@@ -192,6 +194,141 @@ fun EcranMesures(etat: EtatUi, onMesures: (Mesures) -> Unit) = Defilement {
     }
 }
 
+// ---------------------------------------------------------------- Capitalisation
+
+@Composable
+fun EcranCapitalisation(etat: EtatUi, onCapitalisation: (Capitalisation) -> Unit) = Defilement {
+    val c = etat.scenario.capitalisation
+    val r = etat.resultats
+
+    Section("Options types", "Touchez une option, puis ajustez les réglages. Le rendement choisi est conservé.") {
+        Puces(
+            CatalogueCapitalisation.options.map { it.libelle to it.valeur },
+            { it.copy(rendementReel = c.rendementReel) == c },
+        ) { onCapitalisation(it.copy(rendementReel = c.rendementReel)) }
+        CatalogueCapitalisation.options.firstOrNull { it.valeur.copy(rendementReel = c.rendementReel) == c }?.let {
+            Text(it.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+
+    Section("Rendement des placements", "Rendement réel, net de frais et au-delà de l'inflation ; commun au pilier et au fonds.") {
+        Curseur("Rendement réel annuel", c.rendementReel * 100, 0.0, 5.0, 0.25, { pourcent(it, 2) }) {
+            onCapitalisation(c.copy(rendementReel = it / 100))
+        }
+    }
+
+    Section(
+        "Pilier par capitalisation",
+        "Une part des cotisations alimente des comptes placés, convertis en rente viagère (indexée sur les prix) au départ à la retraite.",
+    ) {
+        Curseur("Cotisation capitalisée", c.pointsPilier, 0.0, 10.0, 0.5, { nombre(it) + " pt" }) {
+            onCapitalisation(c.copy(pointsPilier = it))
+        }
+        Curseur("À partir de", c.anneeDebutPilier.toDouble(), 2026.0, 2045.0, 1.0, { it.toInt().toString() }) {
+            onCapitalisation(c.copy(anneeDebutPilier = it.toInt()))
+        }
+        Puces(listOf("En complément" to false, "En substitution" to true), { it == c.substitution }) {
+            onCapitalisation(c.copy(substitution = it))
+        }
+        Text(
+            if (c.substitution) {
+                "Substitution : ces points sont retirés des cotisations de répartition. Le système perd ces ressources tout de suite, " +
+                    "et les droits acquis ensuite diminuent à proportion (sur ${ModeleRetraites.TAUX_COTISATION_TOTAL.toInt()} points de cotisation au total) : c'est le coût de transition."
+            } else {
+                "Complément : cotisation supplémentaire, sans effet sur le financement du système par répartition."
+            },
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    Section("Fonds de réserve", "Fonds collectif placé, qui finance les déficits du système par répartition dans la limite de son capital.") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Activer le fonds", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+            Switch(checked = c.fondsActif, onCheckedChange = { onCapitalisation(c.copy(fondsActif = it)) })
+        }
+        if (c.fondsActif) {
+            Curseur("Capital en 2025", c.fondsInitialMdEuros, 0.0, 300.0, 10.0, { nombre(it, 0) + " Md€" }) {
+                onCapitalisation(c.copy(fondsInitialMdEuros = it))
+            }
+            Curseur("Dotation annuelle", c.dotationFondsPib, 0.0, 1.0, 0.05, { pourcent(it, 2) + " du PIB" }) {
+                onCapitalisation(c.copy(dotationFondsPib = it))
+            }
+            Curseur("Dotations à partir de", c.anneeDebutFonds.toDouble(), 2026.0, 2045.0, 1.0, { it.toInt().toString() }) {
+                onCapitalisation(c.copy(anneeDebutFonds = it.toInt()))
+            }
+            Curseur("Couverture des déficits à partir de", c.anneeDecaissementFonds.toDouble(), 2026.0, 2070.0, 1.0, { it.toInt().toString() }) {
+                onCapitalisation(c.copy(anneeDecaissementFonds = it.toInt()))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Placer les excédents éventuels", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Switch(checked = c.placerExcedents, onCheckedChange = { onCapitalisation(c.copy(placerExcedents = it)) })
+            }
+            Text(
+                "Les dotations sont financées hors du système de retraite (budget de l'État, recettes affectées) : elles ne modifient pas son solde.",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    if (r == null || c.estVide) return@Defilement
+    val p = r.avec
+    val cAvec = Couleurs.avec
+    val cSans = Couleurs.sans
+    val cTroisieme = Couleurs.troisieme
+
+    if (c.pilierActif) {
+        Section("Effets du pilier par capitalisation") {
+            val f = p.en(ANNEE_FIN)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Tuile("Actifs $ANNEE_FIN", pourcent(f.actifsCapitalisationPib, 0) + " PIB", "${nombre(f.actifsCapitalisationPib / 100 * f.pibMdEuros, 0)} Md€", Modifier.weight(1f))
+                Tuile("Rentes $ANNEE_FIN", pourcent(f.rentesCapitalisationPib, 2) + " PIB", "cotisations : ${pourcent(f.cotisationsCapitalisationPib, 2)}", Modifier.weight(1f))
+            }
+            Text("Encours des comptes et provisions des rentes (% du PIB)", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(listOf(serie("Actifs capitalisés", p, cAvec) { it.actifsCapitalisationPib }), { pourcent(it, 0) })
+            Text("Flux annuels (% du PIB)", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(
+                listOf(
+                    serie("Cotisations", p, cAvec) { it.cotisationsCapitalisationPib },
+                    serie("Rentes versées", p, cTroisieme) { it.rentesCapitalisationPib },
+                ),
+                { pourcent(it, 2) },
+            )
+            Text("Pension moyenne relative (% du revenu d'activité moyen)", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(
+                listOf(
+                    serie("Répartition + rentes", p, cAvec) { it.pensionRelativeTotale * 100 },
+                    serie("Sans capitalisation", r.sans, cSans, pointillee = true) { it.pensionRelative * 100 },
+                ),
+                { pourcent(it) },
+            )
+        }
+    }
+
+    if (c.fondsActif) {
+        Section("Effets du fonds de réserve") {
+            val epuisement = p.anneeEpuisementFonds
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val max = p.annees.maxBy { it.fondsReserveMdEuros }
+                Tuile("Capital maximal", "${nombre(max.fondsReserveMdEuros, 0)} Md€", "en ${max.annee} (${pourcent(max.fondsReservePib)} PIB)", Modifier.weight(1f))
+                Tuile(
+                    "Épuisement", epuisement?.toString() ?: "non",
+                    if (epuisement == null) "avant $ANNEE_FIN" else "déficits à nouveau découverts", Modifier.weight(1f),
+                )
+            }
+            Text("Capital du fonds (Md€ de 2025)", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(listOf(serie("Fonds de réserve", p, cAvec) { it.fondsReserveMdEuros }), { nombre(it, 0) })
+            Text("Solde du système (% du PIB)", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(
+                listOf(
+                    serie("Après fonds", p, cTroisieme) { it.soldeApresFondsPib },
+                    serie("Avant fonds", p, cAvec, pointillee = true) { it.soldePib },
+                ),
+                { pourcent(it) }, ligneZero = true,
+            )
+        }
+    }
+}
+
 // ---------------------------------------------------------------- Résultats
 
 private fun serie(nom: String, p: Projection, couleur: androidx.compose.ui.graphics.Color, pointillee: Boolean = false, f: (ResultatAnnee) -> Double) =
@@ -200,7 +337,8 @@ private fun serie(nom: String, p: Projection, couleur: androidx.compose.ui.graph
 @Composable
 fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
     val r = etat.resultats ?: return@Defilement
-    val avecMesures = !etat.scenario.mesures.estVide
+    val avecMesures = !etat.scenario.mesures.estVide || !etat.scenario.capitalisation.estVide
+    val cap = etat.scenario.capitalisation
     val nomAvec = if (avecMesures) "Avec mesures" else "Projection"
     val cAvec = Couleurs.avec
     val cSans = Couleurs.sans
@@ -222,13 +360,14 @@ fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
                 )
             }
         }
+        val apresFonds = if (cap.fondsActif) listOf(serie("Après fonds de réserve", r.avec, cTroisieme) { it.soldeApresFondsPib }) else emptyList()
         GraphiqueCourbes(
-            seriesDe { it.soldePib }, { pourcent(it) },
+            seriesDe { it.soldePib } + apresFonds, { pourcent(it) },
             reperes = Reperes("COR 2026", Projection.REFERENCE_COR_SOLDE), ligneZero = true,
         )
     }
 
-    Section("Pour équilibrer en ${r.leviers.annee}", "Effort supplémentaire sur un seul levier, en plus des mesures choisies.") {
+    Section("Pour équilibrer en ${r.leviers.annee}", "Effort supplémentaire sur un seul levier, en plus des mesures choisies (hors fonds de réserve).") {
         val l = r.leviers
         if (l.soldePib >= 0) {
             Text("Le système est à l'équilibre ou excédentaire en ${l.annee} (${pourcent(l.soldePib)} du PIB).", style = MaterialTheme.typography.bodyMedium)
@@ -250,7 +389,8 @@ fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
     }
 
     Section("Pension moyenne relative", "Pension moyenne rapportée au revenu d'activité moyen (base 50 % en 2025).") {
-        GraphiqueCourbes(seriesDe { it.pensionRelative * 100 }, { pourcent(it) })
+        val avecRentes = if (cap.pilierActif) listOf(serie("Y compris rentes capitalisées", r.avec, cTroisieme) { it.pensionRelativeTotale * 100 }) else emptyList()
+        GraphiqueCourbes(seriesDe { it.pensionRelative * 100 } + avecRentes, { pourcent(it) })
     }
 
     Section("Âge moyen de départ") {
@@ -372,6 +512,19 @@ fun EcranMethode() = Defilement {
             "4. Équation comptable du COR : dépenses / PIB = (retraités / cotisants) × (pension moyenne / revenu d'activité moyen) " +
                 "× part des revenus d'activité dans le PIB. Les dépenses sont exprimées par rapport à 2025. Le modèle a été calé pour " +
                 "reproduire les dépenses 2070 du COR et leur sensibilité à la productivité (16,1 % à 0,4 % ; 14,5 % à 1,0 %).",
+        )
+    }
+    Section("Capitalisation") {
+        Paragraphe(
+            "Pilier par capitalisation : les cotisations capitalisées sont réparties entre les âges selon l'emploi, placées au " +
+                "rendement réel choisi, puis converties en rente viagère indexée sur les prix au moment du départ à la retraite " +
+                "(barème calculé avec la mortalité de l'année et le même rendement). Les comptes des personnes décédées avant la " +
+                "retraite restent mutualisés dans leur génération. En substitution, la répartition perd tout de suite les points " +
+                "basculés, et les droits acquis après la bascule baissent à proportion (sur 28 points de cotisation au total).",
+        )
+        Paragraphe(
+            "Fonds de réserve : capital initial et dotations (financées hors du système) placés au rendement réel choisi ; " +
+                "les excédents éventuels y sont versés ; à partir de l'année choisie, le fonds couvre les déficits jusqu'à épuisement.",
         )
     }
     Section("Limites") {

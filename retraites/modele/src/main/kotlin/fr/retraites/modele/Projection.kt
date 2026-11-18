@@ -30,10 +30,32 @@ data class ResultatAnnee(
     val soldePib: Double,
     /** Solde en milliards d'euros constants de 2025. */
     val soldeMdEuros: Double,
+    val pibMdEuros: Double,
+    /** Cotisations versées au pilier par capitalisation (% du PIB). */
+    val cotisationsCapitalisationPib: Double,
+    /** Encours du pilier par capitalisation : comptes et provisions des rentes (% du PIB). */
+    val actifsCapitalisationPib: Double,
+    /** Rentes versées par le pilier par capitalisation (% du PIB). */
+    val rentesCapitalisationPib: Double,
+    /** Pension moyenne y compris rentes capitalisées, rapportée au revenu d'activité moyen. */
+    val pensionRelativeTotale: Double,
+    /** Capital du fonds de réserve en fin d'année (% du PIB). */
+    val fondsReservePib: Double,
+    val fondsReserveMdEuros: Double,
+    /** Solde du système après intervention du fonds de réserve (% du PIB). */
+    val soldeApresFondsPib: Double,
 )
 
 class Projection(val scenario: Scenario, val annees: List<ResultatAnnee>, val demographie: ProjectionDemographique) {
     fun en(annee: Int): ResultatAnnee = annees[annee - ANNEE_DEBUT]
+
+    /** Première année où le fonds de réserve, sollicité, est épuisé ; null sinon. */
+    val anneeEpuisementFonds: Int?
+        get() {
+            val c = scenario.capitalisation
+            if (!c.fondsActif) return null
+            return annees.firstOrNull { it.annee >= c.anneeDecaissementFonds && it.soldePib < 0 && it.fondsReserveMdEuros <= 1e-6 }?.annee
+        }
 
     /** Solde cumulé (Md€ constants 2025) sur toute la période. */
     val soldeCumuleMdEuros: Double get() = annees.sumOf { it.soldeMdEuros }
@@ -60,6 +82,10 @@ object ModeleRetraites {
     const val PIB_2025_MD_EUROS = 2_990.0
     /** Ressources apportées par un point de cotisation, en points de PIB. */
     const val POINT_COTISATION_PIB = 0.23
+    /** Taux de cotisation retraite total (points) servant à proportionner la perte de droits en cas de substitution. */
+    const val TAUX_COTISATION_TOTAL = 28.0
+    /** Durée de carrière servant à la montée en charge de la perte de droits. */
+    const val DUREE_CARRIERE = 42.0
     /** Gain sur la pension à la liquidation par année de départ plus tardive. */
     const val GAIN_PENSION_PAR_ANNEE = 0.02
     /** Élasticité de la pension à la liquidation (relative au salaire) aux gains de productivité. */
@@ -131,6 +157,13 @@ object ModeleRetraites {
         var popPrec: Pyramide? = null
         var reference: Triple<Double, Double, Double>? = null // (cotisants, masse des pensions, échelle)
         val res = ArrayList<ResultatAnnee>(nb)
+        val cap = s.capitalisation
+        val rend = cap.rendementReel
+        var partRetraitesPrec = DoubleArray(NB_AGES)
+        // Pilier par capitalisation, par âge : comptes en cours de constitution et rentes versées (Md€).
+        var comptes = DoubleArray(NB_AGES)
+        var rentes = DoubleArray(NB_AGES)
+        var fonds = cap.fondsInitialMdEuros
 
         for (i in 0 until nb) {
             val annee = ANNEE_DEBUT + i
@@ -142,8 +175,15 @@ object ModeleRetraites {
             // Pension à la liquidation (relative au salaire de 2025).
             var nouvelle = salaire.pow(1.0 - ELASTICITE_PRODUCTIVITE) * (1.0 + GAIN_PENSION_PAR_ANNEE * decalageAgeEn(m, annee))
             if (annee >= m.anneeVariationNouvellesPensions) nouvelle *= (1.0 + m.variationNouvellesPensions)
+            // Substitution : les droits de répartition acquis après la bascule diminuent à proportion.
+            if (cap.pilierActif && cap.substitution && annee > cap.anneeDebutPilier) {
+                val anciennete = ((annee - cap.anneeDebutPilier) / DUREE_CARRIERE).coerceAtMost(1.0)
+                nouvelle *= (1.0 - cap.pointsPilier / TAUX_COTISATION_TOTAL * anciennete)
+            }
 
             val nbRetraites = DoubleArray(NB_AGES)
+            val partsRetraites = DoubleArray(NB_AGES)
+            val emplois = DoubleArray(NB_AGES)
             val pensions = DoubleArray(NB_AGES)
             var cotisants = 0.0
             var retraites = 0.0
@@ -153,7 +193,9 @@ object ModeleRetraites {
                 val effectif = pop.ensemble(a)
                 val r = partRetraites(a, age)
                 nbRetraites[a] = effectif * r
-                cotisants += effectif * (1.0 - r) * activite(a) * (1.0 - u)
+                partsRetraites[a] = r
+                emplois[a] = effectif * (1.0 - r) * activite(a) * (1.0 - u)
+                cotisants += emplois[a]
                 if (nbRetraites[a] <= 0.0) continue
                 if (i == 0) {
                     // Stock initial : les pensions des générations anciennes ont moins suivi les salaires.
@@ -184,8 +226,79 @@ object ModeleRetraites {
                 ConventionRessources.TAUX_CONSTANT -> RESSOURCES_COR.first().second
             }
             if (annee >= m.anneeHausseCotisations) ressources += m.hausseCotisations * POINT_COTISATION_PIB
+            val pilierEnCours = cap.pilierActif && annee >= cap.anneeDebutPilier
+            if (pilierEnCours && cap.substitution) ressources -= cap.pointsPilier * POINT_COTISATION_PIB
             val solde = ressources - depenses
             val pib = PIB_2025_MD_EUROS * salaire * cotisants / cot0
+
+            // ---- Pilier par capitalisation
+            var cotisationsCap = 0.0
+            var totalRentes = 0.0
+            var actifs = 0.0
+            if (cap.pilierActif) {
+                val qH = demo.quotientsHommes[i]
+                val qF = demo.quotientsFemmes[i]
+                fun quotient(a: Int): Double {
+                    val h = pop.hommes[a]; val f = pop.femmes[a]
+                    return if (h + f > 0) (h * qH[a] + f * qF[a]) / (h + f) else qF[a]
+                }
+                // Valeur actuelle d'une rente de 1 € par an versée à partir de l'âge a (début d'année).
+                val facteur = DoubleArray(NB_AGES)
+                facteur[AGE_MAX] = 1.0
+                for (a in AGE_MAX - 1 downTo 0) facteur[a] = 1.0 + (1.0 - quotient(a)) * facteur[a + 1] / (1.0 + rend)
+
+                val nouveauxComptes = DoubleArray(NB_AGES)
+                val nouvellesRentes = DoubleArray(NB_AGES)
+                if (i > 0) {
+                    val prec = popPrec!!
+                    for (a in 1..AGE_MAX) {
+                        // Les comptes des personnes décédées restent mutualisés au sein de leur génération.
+                        nouveauxComptes[a] = comptes[a - 1] * (1.0 + rend)
+                        val qPrec = if (prec.ensemble(a - 1) > 0) {
+                            (prec.hommes[a - 1] * demo.quotientsHommes[i - 1][a - 1] + prec.femmes[a - 1] * demo.quotientsFemmes[i - 1][a - 1]) / prec.ensemble(a - 1)
+                        } else 1.0
+                        nouvellesRentes[a] = rentes[a - 1] * (1.0 - qPrec)
+                    }
+                    nouvellesRentes[AGE_MAX] += rentes[AGE_MAX] * 0.5
+                }
+                if (pilierEnCours) {
+                    cotisationsCap = cap.pointsPilier * POINT_COTISATION_PIB / 100.0 * pib
+                    for (a in 0..AGE_MAX) nouveauxComptes[a] += cotisationsCap * emplois[a] / cotisants
+                }
+                // Conversion en rente des comptes des personnes qui partent à la retraite dans l'année.
+                for (a in 50..AGE_MAX) {
+                    if (nouveauxComptes[a] <= 0.0) continue
+                    val avant = if (i == 0) partsRetraites[a - 1] else partRetraitesPrec[a - 1]
+                    val part = if (a >= 75 || avant >= 1.0 - 1e-9) 1.0
+                    else ((partsRetraites[a] - avant) / (1.0 - avant)).coerceIn(0.0, 1.0)
+                    val converti = nouveauxComptes[a] * part
+                    nouveauxComptes[a] -= converti
+                    nouvellesRentes[a] += converti / facteur[a]
+                }
+                comptes = nouveauxComptes
+                rentes = nouvellesRentes
+                for (a in 0..AGE_MAX) {
+                    totalRentes += rentes[a]
+                    actifs += comptes[a] + rentes[a] * (facteur[a] - 1.0)
+                }
+            }
+            val rentesPib = totalRentes / pib * 100.0
+
+            // ---- Fonds de réserve
+            var soldeApres = solde
+            if (cap.fondsActif) {
+                if (i > 0) fonds *= (1.0 + rend)
+                val soldeMd = solde / 100.0 * pib
+                if (annee >= cap.anneeDebutFonds && annee < cap.anneeDecaissementFonds) fonds += cap.dotationFondsPib / 100.0 * pib
+                if (cap.placerExcedents && soldeMd > 0 && annee >= cap.anneeDebutFonds) {
+                    fonds += soldeMd
+                    soldeApres = 0.0
+                } else if (soldeMd < 0 && annee >= cap.anneeDecaissementFonds) {
+                    val prelevement = minOf(fonds, -soldeMd)
+                    fonds -= prelevement
+                    soldeApres = solde + prelevement / pib * 100.0
+                }
+            }
 
             res += ResultatAnnee(
                 annee = annee,
@@ -207,7 +320,16 @@ object ModeleRetraites {
                 ressourcesPib = ressources,
                 soldePib = solde,
                 soldeMdEuros = solde / 100.0 * pib,
+                pibMdEuros = pib,
+                cotisationsCapitalisationPib = cotisationsCap / pib * 100.0,
+                actifsCapitalisationPib = actifs / pib * 100.0,
+                rentesCapitalisationPib = rentesPib,
+                pensionRelativeTotale = pensionRelative * (1.0 + rentesPib / depenses),
+                fondsReservePib = if (cap.fondsActif) fonds / pib * 100.0 else 0.0,
+                fondsReserveMdEuros = if (cap.fondsActif) fonds else 0.0,
+                soldeApresFondsPib = soldeApres,
             )
+            partRetraitesPrec = partsRetraites
             nbRetraitesPrec = nbRetraites
             pensionsPrec = pensions
             popPrec = pop

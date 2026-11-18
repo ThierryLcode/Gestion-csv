@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import fr.retraites.app.ui.EcranCapitalisation
 import fr.retraites.app.ui.EcranDemographie
 import fr.retraites.app.ui.EcranHypotheses
 import fr.retraites.app.ui.EcranMesures
@@ -70,7 +71,7 @@ private fun Theme(contenu: @Composable () -> Unit) {
     MaterialTheme(colorScheme = couleurs, content = contenu)
 }
 
-private val ONGLETS = listOf("Résultats", "Mesures", "Hypothèses", "Démographie", "Méthode")
+private val ONGLETS = listOf("Résultats", "Mesures", "Capitalisation", "Hypothèses", "Démographie", "Méthode")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,12 +132,13 @@ private fun Application(vm: RetraitesViewModel = viewModel()) {
             when (onglet) {
                 0 -> EcranResultats(etat) { exporter.launch("projection-retraites.csv") }
                 1 -> EcranMesures(etat, vm::changerMesures)
-                2 -> EcranHypotheses(
+                2 -> EcranCapitalisation(etat, vm::changerCapitalisation)
+                3 -> EcranHypotheses(
                     etat, vm::changerDemographie, vm::changerEconomie,
                     onImporter = { importer.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*")) },
                     onPyramideParDefaut = vm::pyramideParDefaut,
                 )
-                3 -> EcranDemographie(etat)
+                4 -> EcranDemographie(etat)
                 else -> EcranMethode()
             }
         }
