@@ -197,7 +197,7 @@ fun EcranMesures(etat: EtatUi, onMesures: (Mesures) -> Unit) = Defilement {
 // ---------------------------------------------------------------- Capitalisation
 
 @Composable
-fun EcranCapitalisation(etat: EtatUi, onCapitalisation: (Capitalisation) -> Unit) = Defilement {
+fun EcranCapitalisation(etat: EtatUi, onCapitalisation: (Capitalisation) -> Unit, onUnite: (fr.retraites.app.Unite) -> Unit) = Defilement {
     val c = etat.scenario.capitalisation
     val r = etat.resultats
 
@@ -275,23 +275,25 @@ fun EcranCapitalisation(etat: EtatUi, onCapitalisation: (Capitalisation) -> Unit
     val cAvec = Couleurs.avec
     val cSans = Couleurs.sans
     val cTroisieme = Couleurs.troisieme
+    val e = Echelle(etat.unite)
+    SelecteurUnite(etat.unite, onUnite)
 
     if (c.pilierActif) {
-        Section("Effets du pilier par capitalisation") {
+        Section("Effets du pilier par capitalisation", e.libelle + ".") {
             val f = p.en(ANNEE_FIN)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Tuile("Actifs $ANNEE_FIN", pourcent(f.actifsCapitalisationPib, 0) + " PIB", "${nombre(f.actifsCapitalisationPib / 100 * f.pibMdEuros, 0)} Md€", Modifier.weight(1f))
-                Tuile("Rentes $ANNEE_FIN", pourcent(f.rentesCapitalisationPib, 2) + " PIB", "cotisations : ${pourcent(f.cotisationsCapitalisationPib, 2)}", Modifier.weight(1f))
+                Tuile("Actifs $ANNEE_FIN", e.texte(e.v(f.actifsCapitalisationPib, f), 0), null, Modifier.weight(1f))
+                Tuile("Rentes $ANNEE_FIN", e.texte(e.v(f.rentesCapitalisationPib, f), 2), "cotisations : ${e.texte(e.v(f.cotisationsCapitalisationPib, f), 2)}", Modifier.weight(1f))
             }
-            Text("Encours des comptes et provisions des rentes (% du PIB)", style = MaterialTheme.typography.bodyMedium)
-            GraphiqueCourbes(listOf(serie("Actifs capitalisés", p, cAvec) { it.actifsCapitalisationPib }), { pourcent(it, 0) })
-            Text("Flux annuels (% du PIB)", style = MaterialTheme.typography.bodyMedium)
+            Text("Encours des comptes et provisions des rentes", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(listOf(serie("Actifs capitalisés", p, cAvec) { e.v(it.actifsCapitalisationPib, it) }), e.axe(0))
+            Text("Flux annuels", style = MaterialTheme.typography.bodyMedium)
             GraphiqueCourbes(
                 listOf(
-                    serie("Cotisations", p, cAvec) { it.cotisationsCapitalisationPib },
-                    serie("Rentes versées", p, cTroisieme) { it.rentesCapitalisationPib },
+                    serie("Cotisations", p, cAvec) { e.v(it.cotisationsCapitalisationPib, it) },
+                    serie("Rentes versées", p, cTroisieme) { e.v(it.rentesCapitalisationPib, it) },
                 ),
-                { pourcent(it, 2) },
+                e.axe(2),
             )
             Text("Pension moyenne relative (% du revenu d'activité moyen)", style = MaterialTheme.typography.bodyMedium)
             GraphiqueCourbes(
@@ -305,25 +307,25 @@ fun EcranCapitalisation(etat: EtatUi, onCapitalisation: (Capitalisation) -> Unit
     }
 
     if (c.fondsActif) {
-        Section("Effets du fonds de réserve") {
+        Section("Effets du fonds de réserve", e.libelle + ".") {
             val epuisement = p.anneeEpuisementFonds
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val max = p.annees.maxBy { it.fondsReserveMdEuros }
-                Tuile("Capital maximal", "${nombre(max.fondsReserveMdEuros, 0)} Md€", "en ${max.annee} (${pourcent(max.fondsReservePib)} PIB)", Modifier.weight(1f))
+                val max = p.annees.maxBy { if (e.enPib) it.fondsReservePib else it.fondsReserveMdEuros }
+                Tuile("Capital maximal", e.texte(e.v(max.fondsReservePib, max)), "en ${max.annee}", Modifier.weight(1f))
                 Tuile(
                     "Épuisement", epuisement?.toString() ?: "non",
                     if (epuisement == null) "avant $ANNEE_FIN" else "déficits à nouveau découverts", Modifier.weight(1f),
                 )
             }
-            Text("Capital du fonds (Md€ de 2025)", style = MaterialTheme.typography.bodyMedium)
-            GraphiqueCourbes(listOf(serie("Fonds de réserve", p, cAvec) { it.fondsReserveMdEuros }), { nombre(it, 0) })
-            Text("Solde du système (% du PIB)", style = MaterialTheme.typography.bodyMedium)
+            Text("Capital du fonds", style = MaterialTheme.typography.bodyMedium)
+            GraphiqueCourbes(listOf(serie("Fonds de réserve", p, cAvec) { if (e.enPib) it.fondsReservePib else it.fondsReserveMdEuros }), e.axe())
+            Text("Solde du système", style = MaterialTheme.typography.bodyMedium)
             GraphiqueCourbes(
                 listOf(
-                    serie("Après fonds", p, cTroisieme) { it.soldeApresFondsPib },
-                    serie("Avant fonds", p, cAvec, pointillee = true) { it.soldePib },
+                    serie("Après fonds", p, cTroisieme) { e.v(it.soldeApresFondsPib, it) },
+                    serie("Avant fonds", p, cAvec, pointillee = true) { e.v(it.soldePib, it) },
                 ),
-                { pourcent(it) }, ligneZero = true,
+                e.axe(), ligneZero = true,
             )
         }
     }
@@ -335,8 +337,12 @@ private fun serie(nom: String, p: Projection, couleur: androidx.compose.ui.graph
     Serie(nom, couleur, p.annees.map { it.annee }, p.annees.map(f), pointillee)
 
 @Composable
-fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
+fun EcranResultats(etat: EtatUi, onUnite: (fr.retraites.app.Unite) -> Unit, onExporter: () -> Unit) = Defilement {
     val r = etat.resultats ?: return@Defilement
+    val e = Echelle(etat.unite)
+    /** Convertit des repères publiés en % du PIB avec le PIB projeté de l'année. */
+    fun reperes(nom: String, points: List<Pair<Int, Double>>) = Reperes(nom, points.map { (a, v) -> a to e.v(v, r.avec.en(a)) })
+    SelecteurUnite(etat.unite, onUnite)
     val avecMesures = !etat.scenario.mesures.estVide || !etat.scenario.capitalisation.estVide
     val cap = etat.scenario.capitalisation
     val nomAvec = if (avecMesures) "Avec mesures" else "Projection"
@@ -348,40 +354,48 @@ fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
         if (avecMesures) add(serie("Sans mesures", r.sans, cSans, pointillee = true, f = f))
     }
 
-    Section("Solde du système", "En % du PIB ; négatif = besoin de financement.") {
+    Section("Solde du système", e.libelle + " ; négatif = besoin de financement.") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (a in listOf(2030, 2045, 2070)) {
                 val v = r.avec.en(a)
+                val s = r.sans.en(a)
                 Tuile(
                     a.toString(),
-                    pourcent(v.soldePib),
-                    if (avecMesures) "sans : ${pourcent(r.sans.en(a).soldePib)}" else "${nombre(v.soldeMdEuros, 0)} Md€",
+                    if (e.enPib) pourcent(v.soldePib) else nombre(v.soldeMdEuros, 0) + " Md€",
+                    if (avecMesures) "sans : ${if (e.enPib) pourcent(s.soldePib) else nombre(s.soldeMdEuros, 0) + " Md€"}"
+                    else if (e.enPib) "${nombre(v.soldeMdEuros, 0)} Md€" else "${pourcent(v.soldePib)} PIB",
                     Modifier.weight(1f),
                 )
             }
         }
-        val apresFonds = if (cap.fondsActif) listOf(serie("Après fonds de réserve", r.avec, cTroisieme) { it.soldeApresFondsPib }) else emptyList()
+        val apresFonds = if (cap.fondsActif) listOf(serie("Après fonds de réserve", r.avec, cTroisieme) { e.v(it.soldeApresFondsPib, it) }) else emptyList()
         GraphiqueCourbes(
-            seriesDe { it.soldePib } + apresFonds, { pourcent(it) },
-            reperes = Reperes("COR 2026", Projection.REFERENCE_COR_SOLDE), ligneZero = true,
+            seriesDe { e.v(it.soldePib, it) } + apresFonds, e.axe(),
+            reperes = reperes("COR 2026", Projection.REFERENCE_COR_SOLDE), ligneZero = true,
+        )
+        Text(
+            "Solde cumulé ${ANNEE_DEBUT}-${ANNEE_FIN} : ${nombre(r.avec.soldeCumuleMdEuros, 0)} Md€" +
+                if (avecMesures) " (sans mesures : ${nombre(r.sans.soldeCumuleMdEuros, 0)} Md€)" else "",
+            style = MaterialTheme.typography.bodySmall,
         )
     }
 
     Section("Pour équilibrer en ${r.leviers.annee}", "Effort supplémentaire sur un seul levier, en plus des mesures choisies (hors fonds de réserve).") {
         val l = r.leviers
         if (l.soldePib >= 0) {
-            Text("Le système est à l'équilibre ou excédentaire en ${l.annee} (${pourcent(l.soldePib)} du PIB).", style = MaterialTheme.typography.bodyMedium)
+            Text("Le système est à l'équilibre ou excédentaire en ${l.annee} (${e.texte(e.v(l.soldePib, r.avec.en(l.annee)))}).", style = MaterialTheme.typography.bodyMedium)
         } else {
+            Leviers("Besoin de financement", e.texte(-e.v(l.soldePib, r.avec.en(l.annee))))
             Leviers("Cotisations", "+${nombre(l.pointsCotisation)} points")
             Leviers("Pensions de tous les retraités", "${signe(l.variationPensionsPourcent)} %")
             Leviers("Âge moyen de départ", l.decalageAge?.let { "${signe(it)} an (≈ ${nombre(r.avec.en(l.annee).ageMoyenDepart + it)} ans)" } ?: "hors de portée")
         }
     }
 
-    Section("Dépenses et ressources", "En % du PIB.") {
-        val series = seriesDe { it.depensesPib }.map { it.copy(nom = "Dépenses " + it.nom.lowercase()) } +
-            serie("Ressources", r.avec, cTroisieme) { it.ressourcesPib }
-        GraphiqueCourbes(series, { pourcent(it) }, reperes = Reperes("Dépenses COR 2026", Projection.REFERENCE_COR_DEPENSES))
+    Section("Dépenses et ressources", e.libelle + ".") {
+        val series = seriesDe { e.v(it.depensesPib, it) }.map { it.copy(nom = "Dépenses " + it.nom.lowercase()) } +
+            serie("Ressources", r.avec, cTroisieme) { e.v(it.ressourcesPib, it) }
+        GraphiqueCourbes(series, e.axe(), reperes = reperes("Dépenses COR 2026", Projection.REFERENCE_COR_DEPENSES))
     }
 
     Section("Cotisants par retraité") {
@@ -397,13 +411,8 @@ fun EcranResultats(etat: EtatUi, onExporter: () -> Unit) = Defilement {
         GraphiqueCourbes(seriesDe { it.ageMoyenDepart }, { nombre(it) })
     }
 
-    Section("Solde en milliards d'euros", "Euros constants de 2025.") {
-        GraphiqueCourbes(seriesDe { it.soldeMdEuros }, { nombre(it, 0) }, ligneZero = true)
-        Text(
-            "Solde cumulé ${ANNEE_DEBUT}-${ANNEE_FIN} : ${nombre(r.avec.soldeCumuleMdEuros, 0)} Md€" +
-                if (avecMesures) " (sans mesures : ${nombre(r.sans.soldeCumuleMdEuros, 0)} Md€)" else "",
-            style = MaterialTheme.typography.bodySmall,
-        )
+    Section("PIB", "En milliards d'euros constants de 2025 (emploi × productivité).") {
+        GraphiqueCourbes(seriesDe { it.pibMdEuros }, { nombre(it, 0) })
     }
 
     Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.Center) {

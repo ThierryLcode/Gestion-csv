@@ -33,8 +33,12 @@ data class Resultats(
     val leviers: LeviersEquilibre,
 )
 
+/** Unité d'affichage des grandeurs financières. */
+enum class Unite { POURCENT_PIB, MONTANT }
+
 data class EtatUi(
     val scenario: Scenario = Scenario(),
+    val unite: Unite = Unite.POURCENT_PIB,
     /** Nom de la pyramide importée, ou null pour la pyramide intégrée. */
     val pyramideImportee: String? = null,
     val resultats: Resultats? = null,
@@ -57,6 +61,7 @@ class RetraitesViewModel : ViewModel() {
     fun changerEconomie(e: HypothesesEconomiques) = modifier { it.copy(economie = e) }
     fun changerMesures(m: Mesures) = modifier { it.copy(mesures = m) }
     fun changerCapitalisation(c: Capitalisation) = modifier { it.copy(capitalisation = c) }
+    fun changerUnite(u: Unite) = _etat.update { it.copy(unite = u) }
 
     private fun modifier(f: (Scenario) -> Scenario) {
         _etat.update { it.copy(scenario = f(it.scenario)) }

@@ -130,9 +130,9 @@ private fun Application(vm: RetraitesViewModel = viewModel()) {
     ) { marges ->
         Box(Modifier.fillMaxSize().padding(marges)) {
             when (onglet) {
-                0 -> EcranResultats(etat) { exporter.launch("projection-retraites.csv") }
+                0 -> EcranResultats(etat, vm::changerUnite) { exporter.launch("projection-retraites.csv") }
                 1 -> EcranMesures(etat, vm::changerMesures)
-                2 -> EcranCapitalisation(etat, vm::changerCapitalisation)
+                2 -> EcranCapitalisation(etat, vm::changerCapitalisation, vm::changerUnite)
                 3 -> EcranHypotheses(
                     etat, vm::changerDemographie, vm::changerEconomie,
                     onImporter = { importer.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*")) },

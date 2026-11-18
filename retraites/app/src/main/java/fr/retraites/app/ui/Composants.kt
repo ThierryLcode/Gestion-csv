@@ -23,6 +23,37 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 import kotlin.math.roundToInt
 
+/**
+ * Conversion des grandeurs exprimées en % du PIB vers l'unité choisie
+ * (montants en milliards d'euros constants de 2025, avec le PIB projeté de l'année).
+ */
+class Echelle(val unite: fr.retraites.app.Unite) {
+    val enPib: Boolean get() = unite == fr.retraites.app.Unite.POURCENT_PIB
+    fun v(pourcentPib: Double, r: fr.retraites.modele.ResultatAnnee): Double =
+        if (enPib) pourcentPib else pourcentPib / 100.0 * r.pibMdEuros
+    /** Format des axes et de la lecture des graphiques. */
+    fun axe(decimales: Int = 1): (Double) -> String = if (enPib) { x -> pourcent(x, decimales) } else { x -> nombre(x, 0) }
+    /** Valeur avec son unité, pour les tuiles et les textes. */
+    fun texte(x: Double, decimales: Int = 1): String = if (enPib) pourcent(x, decimales) + " PIB" else nombre(x, 0) + " Md€"
+    val libelle: String get() = if (enPib) "En % du PIB" else "En milliards d'euros constants de 2025"
+}
+
+/** Sélecteur d'unité : % du PIB ou montants. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun SelecteurUnite(unite: fr.retraites.app.Unite, onChange: (fr.retraites.app.Unite) -> Unit) {
+    val options = listOf(fr.retraites.app.Unite.POURCENT_PIB to "% du PIB", fr.retraites.app.Unite.MONTANT to "Montants (Md€)")
+    androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        options.forEachIndexed { i, (u, libelle) ->
+            androidx.compose.material3.SegmentedButton(
+                selected = unite == u,
+                onClick = { onChange(u) },
+                shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, options.size),
+            ) { Text(libelle) }
+        }
+    }
+}
+
 /** Couleurs des séries (palette catégorielle validée, déclinée en mode clair et sombre). */
 object Couleurs {
     val avec: Color @Composable get() = if (isSystemInDarkTheme()) Color(0xFF3987E5) else Color(0xFF2A78D6)

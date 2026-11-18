@@ -8,7 +8,7 @@ Application Android qui projette, de 2025 à 2070, l'effet de mesures sur l'équ
 
 | Onglet | Contenu |
 |---|---|
-| **Résultats** | Solde du système (% du PIB et Md€ constants), dépenses et ressources, cotisants par retraité, pension moyenne relative, âge moyen de départ. Chaque courbe compare *avec* et *sans* mesures ; les losanges ◇ sont les valeurs publiées par le COR. Effort nécessaire pour équilibrer en 2070 (cotisations, pensions ou âge). Export CSV. |
+| **Résultats** | Sélecteur d'unité : % du PIB ou montants en Md€ constants de 2025. Solde du système, dépenses et ressources, cotisants par retraité, pension moyenne relative, âge moyen de départ. Chaque courbe compare *avec* et *sans* mesures ; les losanges ◇ sont les valeurs publiées par le COR. Effort nécessaire pour équilibrer en 2070 (cotisations, pensions ou âge). Export CSV. |
 | **Mesures** | Mesures types (départ à 60 ans, retour à 62 ans, âge légal à 65/66 ans, année blanche, sous-indexation, indexation sur les salaires, +1 point de cotisation, baisse des nouvelles pensions) et réglages combinables : décalage de l'âge de départ et rythme, revalorisation des pensions, cotisations, calcul des nouvelles pensions. |
 | **Capitalisation** | Pilier par capitalisation (x points de cotisation, en complément ou en substitution des cotisations de répartition, avec coût de transition) et fonds de réserve (capital initial, dotations, placement des excédents, couverture des déficits jusqu'à épuisement). Rendement réel réglable (2 % par défaut). Graphiques des actifs, des rentes, de la pension totale et du solde après fonds. |
 | **Hypothèses** | Scénario central Insee 2026 / COR et variantes (fécondité 1,2 ou 1,7 ; solde migratoire +70 000 ou +230 000 ; espérance de vie ; anciennes hypothèses Insee 2021), productivité (0,4 / 0,7 / 1,0 %), chômage, convention de ressources. Import d'une pyramide des âges au format CSV. |
@@ -16,6 +16,10 @@ Application Android qui projette, de 2025 à 2070, l'effet de mesures sur l'équ
 | **Méthode** | À propos (développeur, version), sources, méthode et limites. |
 
 Tous les calculs sont faits sur le téléphone ; l'application n'utilise pas le réseau.
+
+## Note technique
+
+La méthodologie et toutes les formules sont décrites dans la note technique Word [`docs/Note-technique-projection-retraites.docx`](docs/Note-technique-projection-retraites.docx), générée par `docs/note-technique.js` (`node note-technique.js Note-technique-projection-retraites.docx`, module npm `docx`).
 
 ## Hypothèses de référence (COR, juin 2026)
 
