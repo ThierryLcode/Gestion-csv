@@ -39,6 +39,8 @@ import fr.retraites.modele.Mesures
 import fr.retraites.modele.ModeleRetraites
 import fr.retraites.modele.Projection
 import fr.retraites.modele.ResultatAnnee
+import fr.retraites.modele.Variante
+import fr.retraites.modele.Variantes
 
 @Composable
 private fun Defilement(contenu: @Composable () -> Unit) {
@@ -61,11 +63,12 @@ fun EcranHypotheses(
     val d = etat.scenario.demographie
     val e = etat.scenario.economie
 
-    Section("Démographie", "Hypothèses Insee 2026 retenues par le COR (rapport de juin 2026) et leurs variantes. Touchez une variante, puis ajustez si besoin.") {
-        Puces(Catalogue.demographie.map { it.libelle to it.valeur }, { it == d }, onDemographie)
-        Catalogue.demographie.firstOrNull { it.valeur == d }?.let {
-            Text(it.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+    Section(
+        "Démographie",
+        "Hypothèses Insee 2026 retenues par le COR (rapport de juin 2026). Les variantes se cumulent ; " +
+            "celles qui portent sur la même hypothèse s'excluent. Ajustez ensuite si besoin.",
+    ) {
+        PucesVariantes(Variantes.demographie, d, HypothesesDemographiques(), "Central Insee 2026 (référence COR)", onDemographie)
         Curseur("Fécondité (enfants par femme)", d.fecondite, 1.0, 2.2, 0.05, { nombre(it, 2) }) { onDemographie(d.copy(fecondite = it)) }
         Curseur("Atteinte en", d.anneeCibleFecondite.toDouble(), 2026.0, 2050.0, 1.0, { it.toInt().toString() }) {
             onDemographie(d.copy(anneeCibleFecondite = it.toInt()))
@@ -85,8 +88,8 @@ fun EcranHypotheses(
         )
     }
 
-    Section("Économie") {
-        Puces(Catalogue.economie.map { it.libelle to it.valeur }, { it == e }, onEconomie)
+    Section("Économie", "Référence COR : productivité 0,7 % par an, chômage 7 %. Les variantes de productivité et de chômage se cumulent.") {
+        PucesVariantes(Variantes.economie, e, HypothesesEconomiques(convention = e.convention), "Référence COR", onEconomie)
         Curseur("Gains de productivité du travail", e.productivite * 100, 0.0, 2.0, 0.1, { pourcent(it) + " / an" }) {
             onEconomie(e.copy(productivite = it / 100))
         }
@@ -122,6 +125,32 @@ fun EcranHypotheses(
             Button(onClick = onImporter) { Text("Importer un CSV") }
             if (etat.pyramideImportee != null) OutlinedButton(onClick = onPyramideParDefaut) { Text("Pyramide intégrée") }
         }
+    }
+}
+
+/**
+ * Puces de variantes cumulables : la puce de référence remet tout à zéro ; une variante
+ * se sélectionne ou se désélectionne, et désélectionne les variantes incompatibles.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun <T> PucesVariantes(variantes: List<Variante<T>>, h: T, reference: T, libelleReference: String, onChange: (T) -> Unit) {
+    androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        androidx.compose.material3.FilterChip(selected = h == reference, onClick = { onChange(reference) }, label = { Text(libelleReference) })
+        variantes.forEach { v ->
+            androidx.compose.material3.FilterChip(
+                selected = v.estActiveParmi(h, variantes),
+                onClick = { onChange(v.basculer(h, variantes)) },
+                label = { Text(v.libelle) },
+            )
+        }
+    }
+    val actives = variantes.filter { it.estActiveParmi(h, variantes) }
+    if (actives.isNotEmpty()) {
+        Text(
+            actives.joinToString("\n") { "• ${it.libelle} : ${it.detail}" },
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

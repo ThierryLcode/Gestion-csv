@@ -93,7 +93,7 @@ c.push(new Paragraph({ spacing: { before: 2400, after: 240 }, children: [new Tex
 c.push(new Paragraph({ spacing: { after: 480 }, children: [new TextRun({ text: "Note technique : méthodologie et formules", size: 36, color: "404040", font: FONT })] }));
 c.push(p("Application Android de projection de l'équilibre du système de retraite français, 2025-2070, à partir des hypothèses du Conseil d'orientation des retraites (rapport annuel de juin 2026)."));
 c.push(new Paragraph({ spacing: { before: 480, after: 80 }, children: runs("**Développeur :** Thierry LORGEOU") }));
-c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Version de l'application :** 0.5.0") }));
+c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Version de l'application :** 0.6.0") }));
 c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Date :** novembre 2026") }));
 c.push(new Paragraph({ children: [new PageBreak()] }));
 
@@ -116,6 +116,7 @@ c.push(tableau(["Hypothèse", "Référence", "Variantes proposées"], [
   ["Anciennes hypothèses Insee 2021", "—", "Fécondité 1,8 ; solde +70 000 ; 87,5 / 90,0 ans"],
 ], [2600, 3426, 3000]));
 c.push(espace());
+c.push(p("Les variantes sont cumulables : chacune ne modifie que l'hypothèse qu'elle concerne (fécondité, solde migratoire, espérance de vie, productivité ou chômage). Deux variantes portant sur la même hypothèse s'excluent : choisir l'une désélectionne l'autre. Les anciennes hypothèses Insee 2021 portent à la fois sur la fécondité, le solde migratoire et l'espérance de vie ; les choisir désélectionne les variantes correspondantes, et choisir ensuite l'une de ces variantes ramène les deux autres hypothèses à la référence."));
 c.push(p("Résultats publiés par le COR utilisés pour le calage et affichés en repères dans l'application :"));
 c.push(tableau(["Indicateur (% du PIB)", "2025", "2030", "2045", "2070"], [
   ["Dépenses de retraite", "14,1", "—", "14,2", "15,3"],
