@@ -138,8 +138,21 @@ fun EcranMesures(etat: EtatUi, onMesures: (Mesures) -> Unit) = Defilement {
         }
     }
 
-    Section("Âge de départ", "Décalage de l'âge moyen effectif de départ par rapport à la législation actuelle (≈ 64,6 ans à terme).") {
-        Curseur("Décalage", m.decalageAge, -5.0, 4.0, 0.1, { signe(it) + " an" }) { onMesures(m.copy(decalageAge = it)) }
+    val ageReference = ModeleRetraites.AGE_DEPART_LONG_TERME
+    Section(
+        "Âge de départ",
+        "Âge moyen effectif de départ visé à terme. Législation actuelle : ${nombre(ageReference)} ans. " +
+            "L'écart s'applique progressivement à partir de l'année choisie.",
+    ) {
+        Curseur("Âge moyen de départ visé", ageReference + m.decalageAge, 58.0, 69.0, 0.1, { nombre(it) + " ans" }) {
+            onMesures(m.copy(decalageAge = Math.round((it - ageReference) * 10) / 10.0))
+        }
+        Text(
+            "Écart avec la législation actuelle : ${signe(m.decalageAge)} an  ·  âge moyen en 2030 : " +
+                "${nombre(ModeleRetraites.ageMoyenDepartEn(m, 2030))} ans, en 2045 : ${nombre(ModeleRetraites.ageMoyenDepartEn(m, 2045))} ans, " +
+                "en 2070 : ${nombre(ModeleRetraites.ageMoyenDepartEn(m, 2070))} ans",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Curseur("À partir de", m.anneeDebutAge.toDouble(), 2026.0, 2045.0, 1.0, { it.toInt().toString() }) {
             onMesures(m.copy(anneeDebutAge = it.toInt()))
         }

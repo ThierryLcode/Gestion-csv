@@ -93,7 +93,7 @@ c.push(new Paragraph({ spacing: { before: 2400, after: 240 }, children: [new Tex
 c.push(new Paragraph({ spacing: { after: 480 }, children: [new TextRun({ text: "Note technique : méthodologie et formules", size: 36, color: "404040", font: FONT })] }));
 c.push(p("Application Android de projection de l'équilibre du système de retraite français, 2025-2070, à partir des hypothèses du Conseil d'orientation des retraites (rapport annuel de juin 2026)."));
 c.push(new Paragraph({ spacing: { before: 480, after: 80 }, children: runs("**Développeur :** Thierry LORGEOU") }));
-c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Version de l'application :** 0.4.0") }));
+c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Version de l'application :** 0.5.0") }));
 c.push(new Paragraph({ spacing: { after: 80 }, children: runs("**Date :** novembre 2026") }));
 c.push(new Paragraph({ children: [new PageBreak()] }));
 
@@ -181,7 +181,7 @@ c.push(p("Les migrants de l'année ne sont exposés qu'à la moitié du risque d
 // 5
 c.push(h1("5. Retraités et cotisants"));
 c.push(h2("5.1 Âge moyen de départ"));
-c.push(p("L'âge moyen effectif de départ de la législation de référence (réforme de 2023 suspendue jusqu'en 2028 puis reprise) est interpolé linéairement entre les points suivants : 62,9 ans (2025), 63,1 (2028), 64,2 (2035), 64,4 (2045), 64,6 (2070). Une mesure d'âge y ajoute un décalage δ(t), d'amplitude Δ, appliqué à partir de l'année t₀ au rythme ρ (années d'âge par année civile ; ρ = 0 pour une application immédiate) :"));
+c.push(p("L'âge moyen effectif de départ de la législation de référence (réforme de 2023 suspendue jusqu'en 2028 puis reprise) est interpolé linéairement entre les points suivants : 62,9 ans (2025), 63,1 (2028), 64,2 (2035), 64,4 (2045), 64,6 (2070). Une mesure d'âge y ajoute un décalage δ(t), d'amplitude Δ (l'utilisateur choisit l'âge moyen visé à terme, de 58 à 69 ans, et Δ en est l'écart avec 64,6 ans), appliqué à partir de l'année t₀ au rythme ρ (années d'âge par année civile ; ρ = 0 pour une application immédiate) :"));
 c.push(eq("A", par("t"), " = ", sub("A", "réf"), par("t"), " + δ", par("t"), ",   δ", par("t"), " = signe", par("Δ"), " × min", par(["abs", par("Δ"), ", ", par(["t − ", sub("t", "0"), " + 1"]), " ρ"]), "  pour t ≥ ", sub("t", "0")));
 c.push(h2("5.2 Part de retraités par âge"));
 c.push(p("La part des personnes d'âge x déjà retraitées suit une courbe logistique centrée sur l'âge moyen de départ (nulle avant 50 ans), avec un paramètre de dispersion σ = 1,1 / 1,7 ≈ 0,65 an :"));
@@ -240,7 +240,7 @@ c.push(p("Les repères publiés par le COR, exprimés en % du PIB, sont converti
 // 8
 c.push(h1("8. Mesures"));
 c.push(tableau(["Levier", "Paramètres", "Effet dans le modèle"], [
-  ["Âge de départ", "Décalage Δ (−5 à +4 ans), année t₀, rythme ρ (immédiat, 3 ou 6 mois par an)", "Décale A(t) (5.1) ; modifie R(x, t), donc retraités et cotisants ; +2 % de pension par année de report (6.1)"],
+  ["Âge de départ", "Âge moyen de départ visé à terme, de 58 à 69 ans (Δ = âge visé − 64,6 ans), année t₀, rythme ρ (immédiat, 3 ou 6 mois par an)", "Décale A(t) (5.1) ; modifie R(x, t), donc retraités et cotisants ; +2 % de pension par année de report (6.1)"],
   ["Revalorisation", "Indexation sur les salaires ; sous-indexation s (points), début, durée", "Modifie r_t pour les pensions en cours de service (6.2)"],
   ["Cotisations", "Hausse c₊ (points), année t₊", "+0,23 point de PIB de ressources par point (7.2)"],
   ["Nouvelles pensions", "Variation v (%), année t_v", "Multiplie π_new(t) (6.1)"],

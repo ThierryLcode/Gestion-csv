@@ -122,6 +122,9 @@ object ModeleRetraites {
         return sign(m.decalageAge) * minOf(abs(m.decalageAge), atteint)
     }
 
+    /** Âge moyen de départ atteint à terme (2070) avec la législation actuelle. */
+    val AGE_DEPART_LONG_TERME: Double get() = AGE_DEPART_REFERENCE.last().second
+
     fun ageMoyenDepartEn(m: Mesures, annee: Int): Double = interpoler(AGE_DEPART_REFERENCE, annee) + decalageAgeEn(m, annee)
 
     /** Part des personnes d'âge [age] (révolu au 1er janvier) déjà retraitées. */

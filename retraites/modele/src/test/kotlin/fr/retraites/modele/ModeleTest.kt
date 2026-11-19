@@ -91,6 +91,15 @@ class ModeleTest {
     }
 
     @Test
+    fun ageDeDepartJusqua69Ans() {
+        val m = Mesures(decalageAge = 69.0 - ModeleRetraites.AGE_DEPART_LONG_TERME, anneeDebutAge = 2027, rythmeAge = 0.25)
+        val p = ModeleRetraites.projeter(Scenario(mesures = m))
+        assertEquals(69.0, p.en(2070).ageMoyenDepart, 1e-9)
+        assertTrue(p.en(2070).soldePib > reference.en(2070).soldePib)
+        assertTrue(p.en(2070).rapportCotisantsRetraites > reference.en(2070).rapportCotisantsRetraites)
+    }
+
+    @Test
     fun leviersEquilibrentLeSysteme() {
         val l = Equilibre.leviers(Scenario())
         assertEquals(-l.soldePib / 0.23, l.pointsCotisation, 1e-9)
