@@ -51,12 +51,12 @@ Public Sub LancerACP()
     LireDonnees
     Application.StatusBar = "ACP : calculs..."
     Calculer
+    EcrireStockage
     Application.StatusBar = "ACP : création des tableaux et graphiques..."
     SupprimerResultats
     ObtenirFeuille F_SYNTHESE, True
     ObtenirFeuille F_VARIABLES, True
     ObtenirFeuille F_INDIVIDUS, True
-    InitGraphiques
     Application.StatusBar = "ACP : variables..."
     EcrireVariables
     Application.StatusBar = "ACP : individus..."
@@ -382,7 +382,14 @@ Private Sub Calculer()
         axeX = 1: axeY = 2
     End If
     If kAff > nAxes Then kAff = nAxes
+    ' Axes calculés : ceux des tableaux, du plan initial, et au moins les 10 premiers
+    ' (pour pouvoir changer de plan sur les feuilles de résultats)
     kCalc = kAff
+    If nAxes < 10 Then
+        If nAxes > kCalc Then kCalc = nAxes
+    ElseIf kCalc < 10 Then
+        kCalc = 10
+    End If
     If axeX > kCalc Then kCalc = axeX
     If axeY > kCalc Then kCalc = axeY
 
@@ -750,31 +757,9 @@ Private Sub EcrireVariables()
     PreparerFeuille ws, "ACP - Variables", "Cercle des corrélations, contributions, qualité de représentation et statistiques des variables"
     Set tables = New Collection
 
-    ' --- Graphiques en haut de la feuille
+    ' --- Graphiques en haut de la feuille (plan modifiable par la barre d'axes)
+    DessinerGraphiquesVariables ws, axeX, axeY
     hautGraph = ws.Rows(4).Top
-    ReDim cx(1 To nVar): ReDim cy(1 To nVar): ReDim qual(1 To nVar)
-    ReDim cX2(1 To nVar): ReDim cY2(1 To nVar)
-    For j = 1 To nVar
-        cx(j) = corVar(j, axeX)
-        cy(j) = corVar(j, axeY)
-        qual(j) = cos2Var(j, axeX) + cos2Var(j, axeY)
-        cX2(j) = ctrVar(j, axeX)
-        cY2(j) = ctrVar(j, axeY)
-    Next j
-    If nSup > 0 Then
-        ReDim sx(1 To nSup): ReDim sy(1 To nSup)
-        For j = 1 To nSup
-            sx(j) = corSup(j, axeX)
-            sy(j) = corSup(j, axeY)
-        Next j
-    Else
-        ReDim sx(1 To 1): ReDim sy(1 To 1): ReDim nomsSup(1 To 1)
-    End If
-    GraphCercle ws, ws.Range("B1").Left, hautGraph, 460, nomsVar, cx, cy, qual, nVar, nomsSup, sx, sy, nSup, TitreAxe(axeX), TitreAxe(axeY)
-    GraphContributions ws, ws.Range("B1").Left + 475, hautGraph, 470, 225, nomsVar, cX2, nVar, 30, 100# / nVar, _
-                       "Contributions des variables à la Dim." & axeX, "ContribVarX"
-    GraphContributions ws, ws.Range("B1").Left + 475, hautGraph + 235, 470, 225, nomsVar, cY2, nVar, 30, 100# / nVar, _
-                       "Contributions des variables à la Dim." & axeY, "ContribVarY"
     r = LigneSous(ws, hautGraph + 470)
     With ws.Cells(r - 1, 2)
         .Value = "'" & Sym("Flèches foncées : variables bien représentées sur le plan (cos² {>=} 0,5). Barres foncées : contribution supérieure à la moyenne (ligne pointillée).")
@@ -894,6 +879,7 @@ Private Sub EcrireVariables()
     End If
 
     AjusterLargeurs ws, tables
+    BarreAxes ws, axeX, axeY
     ws.Range("A1").Select
 End Sub
 
@@ -959,45 +945,11 @@ Private Sub EcrireIndividus()
     Set tables = New Collection
     avecGroupe = (nGroupes > 0)
 
-    ' --- Choix des individus à nommer : les plus contributifs au plan
-    ReDim fx(1 To nInd): ReDim fy(1 To nInd): ReDim montrer(1 To nInd): ReDim score(1 To nInd)
-    ReDim cX2(1 To nInd): ReDim cY2(1 To nInd)
-    For i = 1 To nInd
-        fx(i) = matF(i, axeX)
-        fy(i) = matF(i, axeY)
-        cX2(i) = ctrInd(i, axeX)
-        cY2(i) = ctrInd(i, axeY)
-        score(i) = ctrInd(i, axeX) * lam(axeX) + ctrInd(i, axeY) * lam(axeY)
-    Next i
-    If nInd <= maxEtiq Then
-        For i = 1 To nInd
-            montrer(i) = True
-        Next i
-    ElseIf maxEtiq > 0 Then
-        ordre = OrdreDecroissantRapide(score, nInd)
-        nbM = maxEtiq
-        For i = 1 To nbM
-            montrer(ordre(i)) = True
-        Next i
-        Avertir "Graphique des individus : seuls les " & maxEtiq & " individus les plus contributifs au plan sont nommés."
-    End If
-    If avecGroupe Then
-        ReDim bx(1 To nGroupes): ReDim by(1 To nGroupes)
-        For k = 1 To nGroupes
-            bx(k) = baryG(k, axeX)
-            by(k) = baryG(k, axeY)
-        Next k
-    Else
-        ReDim bx(1 To 1): ReDim by(1 To 1): ReDim idxGroupe(1 To nInd): ReDim nomsGroupes(1 To 1)
-    End If
-
+    DessinerGraphiquesIndividus ws, axeX, axeY, True
     hautGraph = ws.Rows(4).Top
-    GraphIndividus ws, ws.Range("B1").Left, hautGraph, 600, 470, nInd, fx, fy, etiq, montrer, idxGroupe, nomsGroupes, nGroupes, _
-                   bx, by, TitreAxe(axeX), TitreAxe(axeY)
-    GraphContributions ws, ws.Range("B1").Left + 615, hautGraph, 440, 230, etiq, cX2, nInd, 15, 100# / nInd, _
-                       "Individus les plus contributifs à la Dim." & axeX, "ContribIndX"
-    GraphContributions ws, ws.Range("B1").Left + 615, hautGraph + 240, 440, 230, etiq, cY2, nInd, 15, 100# / nInd, _
-                       "Individus les plus contributifs à la Dim." & axeY, "ContribIndY"
+    If Not avecGroupe Then
+        ReDim idxGroupe(1 To nInd): ReDim nomsGroupes(1 To 1)
+    End If
     r = LigneSous(ws, hautGraph + 470) + 1
 
     ' --- Groupes
@@ -1081,6 +1033,7 @@ Private Sub EcrireIndividus()
     tables.Add rng
     rng.AutoFilter
     AjusterLargeurs ws, tables
+    BarreAxes ws, axeX, axeY
     ws.Range("A1").Select
 End Sub
 
@@ -1189,6 +1142,7 @@ Private Sub EcrireSynthese()
     Next k
     hautG = ws.Rows(rTab).Top
     pcts = PctTableau()
+    InitGraphiques F_GRAPH_SYN
     GraphEboulis ws, ws.Columns("H").Left, hautG, 480, 260, pcts, nAxes, nbRetenus
     r = r + nAff + 1
     If ws.Rows(r).Top < hautG + 270 Then r = LigneSous(ws, hautG + 270)
@@ -1271,7 +1225,8 @@ Private Sub EcrireSynthese()
     r = Ligne(ws, r, "Carte des individus : deux individus proches ont des profils semblables (s'ils sont bien représentés : cos² élevé).", False, gris)
     r = Ligne(ws, r, "Un individu situé du côté d'une flèche présente des valeurs élevées pour cette variable ; du côté opposé, des valeurs faibles.", False, gris, 1)
     r = Ligne(ws, r, "Contribution : part (en %) d'une variable ou d'un individu dans la construction d'un axe. cos² : qualité de représentation (0 à 1).", False, gris)
-    r = Ligne(ws, r, "Détails : feuilles « " & F_VARIABLES & " » et « " & F_INDIVIDUS & " ».", False, gris)
+    r = Ligne(ws, r, "Détails : feuilles « " & F_VARIABLES & " » et « " & F_INDIVIDUS & " ». Pour afficher un autre plan (ex. Dim.1-Dim.3), choisissez", False, gris)
+    r = Ligne(ws, r, "les dimensions en haut de ces feuilles puis cliquez sur « Actualiser les graphiques ».", False, gris, 1)
 
     ws.Range("A1").Select
 End Sub
@@ -1464,4 +1419,328 @@ Private Function NomsCourts(ByVal liste As String) As String
     Next i
     If n > 3 Then s = s & "..."
     NomsCourts = s
+End Function
+
+' =============================================================================
+'  6. Graphiques redessinables (choix des dimensions)
+' =============================================================================
+
+' Cercle des corrélations + contributions des variables pour le plan ax-ay
+Private Sub DessinerGraphiquesVariables(ws As Worksheet, ByVal ax As Long, ByVal ay As Long)
+    Dim j As Long, haut As Double, gauche As Double
+    Dim cx() As Double, cy() As Double, qual() As Double, sx() As Double, sy() As Double
+    Dim cX2() As Double, cY2() As Double, nomsS() As String
+
+    SupprimerGraphiques ws
+    InitGraphiques F_GRAPH_VAR
+    ws.Rows(3).RowHeight = 22
+    haut = ws.Rows(4).Top + 4
+    gauche = ws.Columns("B").Left
+    ReDim cx(1 To nVar): ReDim cy(1 To nVar): ReDim qual(1 To nVar)
+    ReDim cX2(1 To nVar): ReDim cY2(1 To nVar)
+    For j = 1 To nVar
+        cx(j) = corVar(j, ax)
+        cy(j) = corVar(j, ay)
+        qual(j) = cos2Var(j, ax) + cos2Var(j, ay)
+        cX2(j) = ctrVar(j, ax)
+        cY2(j) = ctrVar(j, ay)
+    Next j
+    If nSup > 0 Then
+        ReDim sx(1 To nSup): ReDim sy(1 To nSup): ReDim nomsS(1 To nSup)
+        For j = 1 To nSup
+            sx(j) = corSup(j, ax)
+            sy(j) = corSup(j, ay)
+            nomsS(j) = nomsSup(j)
+        Next j
+    Else
+        ReDim sx(1 To 1): ReDim sy(1 To 1): ReDim nomsS(1 To 1)
+    End If
+    GraphCercle ws, gauche, haut, 460, nomsVar, cx, cy, qual, nVar, nomsS, sx, sy, nSup, TitreAxe(ax), TitreAxe(ay)
+    GraphContributions ws, gauche + 475, haut, 470, 225, nomsVar, cX2, nVar, 30, 100# / nVar, _
+                       "Contributions des variables à la Dim." & ax, "ContribVarX"
+    GraphContributions ws, gauche + 475, haut + 235, 470, 225, nomsVar, cY2, nVar, 30, 100# / nVar, _
+                       "Contributions des variables à la Dim." & ay, "ContribVarY"
+End Sub
+
+' Carte des individus + individus les plus contributifs pour le plan ax-ay
+Private Sub DessinerGraphiquesIndividus(ws As Worksheet, ByVal ax As Long, ByVal ay As Long, ByVal signaler As Boolean)
+    Dim i As Long, k As Long, haut As Double, gauche As Double, ordre() As Long
+    Dim fx() As Double, fy() As Double, montrer() As Boolean, score() As Double
+    Dim cX2() As Double, cY2() As Double, bx() As Double, by() As Double
+    Dim idxG() As Long, nomsG() As String
+
+    SupprimerGraphiques ws
+    InitGraphiques F_GRAPH_IND
+    ws.Rows(3).RowHeight = 22
+    haut = ws.Rows(4).Top + 4
+    gauche = ws.Columns("B").Left
+
+    ' Individus nommés : tous, ou les plus contributifs au plan
+    ReDim fx(1 To nInd): ReDim fy(1 To nInd): ReDim montrer(1 To nInd): ReDim score(1 To nInd)
+    ReDim cX2(1 To nInd): ReDim cY2(1 To nInd)
+    For i = 1 To nInd
+        fx(i) = matF(i, ax)
+        fy(i) = matF(i, ay)
+        cX2(i) = ctrInd(i, ax)
+        cY2(i) = ctrInd(i, ay)
+        score(i) = ctrInd(i, ax) * lam(ax) + ctrInd(i, ay) * lam(ay)
+    Next i
+    If nInd <= maxEtiq Then
+        For i = 1 To nInd
+            montrer(i) = True
+        Next i
+    ElseIf maxEtiq > 0 Then
+        ordre = OrdreDecroissantRapide(score, nInd)
+        For i = 1 To maxEtiq
+            montrer(ordre(i)) = True
+        Next i
+        If signaler Then Avertir "Graphique des individus : seuls les " & maxEtiq & " individus les plus contributifs au plan sont nommés."
+    End If
+
+    If nGroupes > 0 Then
+        ReDim bx(1 To nGroupes): ReDim by(1 To nGroupes)
+        For k = 1 To nGroupes
+            bx(k) = baryG(k, ax)
+            by(k) = baryG(k, ay)
+        Next k
+        idxG = idxGroupe
+        nomsG = nomsGroupes
+    Else
+        ReDim bx(1 To 1): ReDim by(1 To 1): ReDim idxG(1 To nInd): ReDim nomsG(1 To 1)
+    End If
+
+    GraphIndividus ws, gauche, haut, 600, 470, nInd, fx, fy, etiq, montrer, idxG, nomsG, nGroupes, _
+                   bx, by, TitreAxe(ax), TitreAxe(ay)
+    GraphContributions ws, gauche + 615, haut, 440, 230, etiq, cX2, nInd, 15, 100# / nInd, _
+                       "Individus les plus contributifs à la Dim." & ax, "ContribIndX"
+    GraphContributions ws, gauche + 615, haut + 240, 440, 230, etiq, cY2, nInd, 15, 100# / nInd, _
+                       "Individus les plus contributifs à la Dim." & ay, "ContribIndY"
+End Sub
+
+' Barre de choix des dimensions (ligne 3) au-dessus des graphiques
+Private Sub BarreAxes(ws As Worksheet, ByVal ax As Long, ByVal ay As Long)
+    Dim i As Long
+    For i = ws.Shapes.Count To 1 Step -1
+        If Left$(ws.Shapes(i).Name, 4) = "btn_" Then ws.Shapes(i).Delete
+    Next i
+    If ws.Columns("B").ColumnWidth < 16 Then ws.Columns("B").ColumnWidth = 16
+    If ws.Columns("D").ColumnWidth < 13 Then ws.Columns("D").ColumnWidth = 13
+    If ws.Columns("C").ColumnWidth < 8 Then ws.Columns("C").ColumnWidth = 8
+    If ws.Columns("E").ColumnWidth < 8 Then ws.Columns("E").ColumnWidth = 8
+    ws.Rows(3).RowHeight = 22
+    ws.Range("B3").Value = "Axe horizontal"
+    ws.Range("D3").Value = "Axe vertical"
+    With ws.Range("B3,D3")
+        .Font.Bold = True
+        .Font.Color = CouleurTitre()
+        .HorizontalAlignment = xlRight
+        .VerticalAlignment = xlCenter
+    End With
+    With ws.Range(CEL_AXE_X & "," & CEL_AXE_Y)
+        .Interior.Color = RGB(255, 249, 219)
+        .Borders.Color = RGB(200, 200, 200)
+        .Font.Bold = True
+        .Font.Color = CouleurTitre()
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .NumberFormat = "0"
+        .Locked = False
+    End With
+    ws.Range(CEL_AXE_X).Value = ax
+    ws.Range(CEL_AXE_Y).Value = ay
+    PoserListe ws.Range(CEL_AXE_X), "H", kCalc
+    PoserListe ws.Range(CEL_AXE_Y), "H", kCalc
+    AjouterBouton ws, "F3:H3", "Actualiser les graphiques", "ActualiserGraphiques", CouleurBouton()
+    ws.Shapes("btn_ActualiserGraphiques").Placement = xlFreeFloating
+    With ws.Range("I3")
+        .Value = "Choisissez deux dimensions (1 à " & kCalc & ") puis cliquez sur le bouton : seuls les graphiques sont redessinés."
+        .Font.Italic = True
+        .Font.Size = 9
+        .Font.Color = RGB(110, 110, 110)
+        .VerticalAlignment = xlCenter
+    End With
+End Sub
+
+' Macro du bouton « Actualiser les graphiques »
+Public Sub ActualiserGraphiques()
+    Dim ws As Worksheet, ax As Long, ay As Long
+    On Error GoTo Erreur
+    Set ws = ActiveSheet
+    If ws.Name <> F_VARIABLES And ws.Name <> F_INDIVIDUS Then Exit Sub
+    If Not ChargerStockage() Then Err.Raise ERR_ACP, , "Résultats de l'ACP introuvables : relancez l'ACP depuis la feuille Accueil."
+    ax = CLng(Val(TexteCellule(ws.Range(CEL_AXE_X).Value)))
+    ay = CLng(Val(TexteCellule(ws.Range(CEL_AXE_Y).Value)))
+    If ax < 1 Or ay < 1 Or ax > kCalc Or ay > kCalc Then
+        Err.Raise ERR_ACP, , "Choisissez des dimensions comprises entre 1 et " & kCalc & "." & vbCrLf & _
+                  "(Pour d'autres dimensions, augmentez « Nombre d'axes détaillés » sur la feuille Accueil et relancez l'ACP.)"
+    End If
+    If ax = ay Then Err.Raise ERR_ACP, , "Les axes horizontal et vertical doivent être différents."
+
+    Application.ScreenUpdating = False
+    Application.Cursor = xlWait
+    If ws.Name = F_VARIABLES Then
+        DessinerGraphiquesVariables ws, ax, ay
+    Else
+        DessinerGraphiquesIndividus ws, ax, ay, False
+    End If
+    ws.Activate
+    ws.Range(CEL_AXE_X).Select
+    Application.Cursor = xlDefault
+    Application.ScreenUpdating = True
+    Exit Sub
+Erreur:
+    Application.Cursor = xlDefault
+    Application.ScreenUpdating = True
+    MsgBox Err.Description, vbExclamation, "ACP"
+End Sub
+
+' -----------------------------------------------------------------------------
+'  Conservation des résultats dans la feuille masquée ACP_Stock, pour pouvoir
+'  redessiner les graphiques (même après réouverture du classeur).
+'  Colonnes : A-B paramètres | D valeurs propres | puis blocs variables,
+'  variables supplémentaires, groupes et individus.
+' -----------------------------------------------------------------------------
+Private Sub ColonnesStock(ByVal k As Long, ByRef cV As Long, ByRef cS As Long, ByRef cG As Long, ByRef cI As Long)
+    cV = 6                      ' nom | corrélations (k) | contributions (k)
+    cS = cV + 1 + 2 * k + 1     ' nom | corrélations (k)
+    cG = cS + 1 + k + 1         ' nom | effectif | barycentres (k)
+    cI = cG + 2 + k + 1         ' étiquette | groupe | coordonnées (k) | contributions (k)
+End Sub
+
+Private Sub EcrireStockage()
+    Dim ws As Worksheet, t() As Variant, i As Long, k As Long, cV As Long, cS As Long, cG As Long, cI As Long
+
+    Set ws = ObtenirFeuille(F_STOCK, True)
+    ws.Cells.Clear
+    ws.Visible = xlSheetHidden
+    ColonnesStock kCalc, cV, cS, cG, cI
+
+    ReDim t(1 To 7, 1 To 2)
+    t(1, 1) = "nInd": t(1, 2) = nInd
+    t(2, 1) = "nVar": t(2, 2) = nVar
+    t(3, 1) = "nSup": t(3, 2) = nSup
+    t(4, 1) = "nGroupes": t(4, 2) = nGroupes
+    t(5, 1) = "kCalc": t(5, 2) = kCalc
+    t(6, 1) = "inertie": t(6, 2) = inertieTot
+    t(7, 1) = "maxEtiq": t(7, 2) = maxEtiq
+    ws.Range("A1:B7").Value = t
+    ReDim t(1 To kCalc, 1 To 1)
+    For k = 1 To kCalc
+        t(k, 1) = lam(k)
+    Next k
+    ws.Cells(1, 4).Resize(kCalc, 1).Value = t
+
+    ReDim t(1 To nVar, 1 To 1 + 2 * kCalc)
+    For i = 1 To nVar
+        t(i, 1) = "'" & nomsVar(i)
+        For k = 1 To kCalc
+            t(i, 1 + k) = corVar(i, k)
+            t(i, 1 + kCalc + k) = ctrVar(i, k)
+        Next k
+    Next i
+    ws.Cells(1, cV).Resize(nVar, 1 + 2 * kCalc).Value = t
+
+    If nSup > 0 Then
+        ReDim t(1 To nSup, 1 To 1 + kCalc)
+        For i = 1 To nSup
+            t(i, 1) = "'" & nomsSup(i)
+            For k = 1 To kCalc
+                t(i, 1 + k) = corSup(i, k)
+            Next k
+        Next i
+        ws.Cells(1, cS).Resize(nSup, 1 + kCalc).Value = t
+    End If
+
+    If nGroupes > 0 Then
+        ReDim t(1 To nGroupes, 1 To 2 + kCalc)
+        For i = 1 To nGroupes
+            t(i, 1) = "'" & nomsGroupes(i)
+            t(i, 2) = effGroupe(i)
+            For k = 1 To kCalc
+                t(i, 2 + k) = baryG(i, k)
+            Next k
+        Next i
+        ws.Cells(1, cG).Resize(nGroupes, 2 + kCalc).Value = t
+    End If
+
+    ReDim t(1 To nInd, 1 To 2 + 2 * kCalc)
+    For i = 1 To nInd
+        t(i, 1) = "'" & etiq(i)
+        If nGroupes > 0 Then t(i, 2) = idxGroupe(i) Else t(i, 2) = 0
+        For k = 1 To kCalc
+            t(i, 2 + k) = matF(i, k)
+            t(i, 2 + kCalc + k) = ctrInd(i, k)
+        Next k
+    Next i
+    ws.Cells(1, cI).Resize(nInd, 2 + 2 * kCalc).Value = t
+End Sub
+
+Private Function ChargerStockage() As Boolean
+    Dim ws As Worksheet, t As Variant, i As Long, k As Long, cV As Long, cS As Long, cG As Long, cI As Long
+
+    Set ws = ObtenirFeuille(F_STOCK)
+    If ws Is Nothing Then Exit Function
+    If TexteCellule(ws.Range("A1").Value) <> "nInd" Then Exit Function
+    nInd = CLng(ws.Range("B1").Value)
+    nVar = CLng(ws.Range("B2").Value)
+    nSup = CLng(ws.Range("B3").Value)
+    nGroupes = CLng(ws.Range("B4").Value)
+    kCalc = CLng(ws.Range("B5").Value)
+    inertieTot = CDbl(ws.Range("B6").Value)
+    maxEtiq = CLng(ws.Range("B7").Value)
+    If nInd < 1 Or nVar < 2 Or kCalc < 2 Then Exit Function
+    ColonnesStock kCalc, cV, cS, cG, cI
+
+    ReDim lam(1 To kCalc)
+    For k = 1 To kCalc
+        lam(k) = CDbl(ws.Cells(k, 4).Value)
+    Next k
+
+    t = ws.Cells(1, cV).Resize(nVar, 1 + 2 * kCalc).Value
+    ReDim nomsVar(1 To nVar)
+    ReDim corVar(1 To nVar, 1 To kCalc): ReDim cos2Var(1 To nVar, 1 To kCalc): ReDim ctrVar(1 To nVar, 1 To kCalc)
+    For i = 1 To nVar
+        nomsVar(i) = TexteCellule(t(i, 1))
+        For k = 1 To kCalc
+            corVar(i, k) = CDbl(t(i, 1 + k))
+            cos2Var(i, k) = corVar(i, k) ^ 2
+            ctrVar(i, k) = CDbl(t(i, 1 + kCalc + k))
+        Next k
+    Next i
+
+    If nSup > 0 Then
+        t = ws.Cells(1, cS).Resize(nSup, 1 + kCalc).Value
+        ReDim nomsSup(1 To nSup): ReDim corSup(1 To nSup, 1 To kCalc)
+        For i = 1 To nSup
+            nomsSup(i) = TexteCellule(t(i, 1))
+            For k = 1 To kCalc
+                corSup(i, k) = CDbl(t(i, 1 + k))
+            Next k
+        Next i
+    End If
+
+    If nGroupes > 0 Then
+        t = ws.Cells(1, cG).Resize(nGroupes, 2 + kCalc).Value
+        ReDim nomsGroupes(1 To nGroupes): ReDim effGroupe(1 To nGroupes): ReDim baryG(1 To nGroupes, 1 To kCalc)
+        For i = 1 To nGroupes
+            nomsGroupes(i) = TexteCellule(t(i, 1))
+            effGroupe(i) = CLng(t(i, 2))
+            For k = 1 To kCalc
+                baryG(i, k) = CDbl(t(i, 2 + k))
+            Next k
+        Next i
+    End If
+
+    t = ws.Cells(1, cI).Resize(nInd, 2 + 2 * kCalc).Value
+    ReDim etiq(1 To nInd): ReDim idxGroupe(1 To nInd)
+    ReDim matF(1 To nInd, 1 To kCalc): ReDim ctrInd(1 To nInd, 1 To kCalc)
+    For i = 1 To nInd
+        etiq(i) = TexteCellule(t(i, 1))
+        idxGroupe(i) = CLng(t(i, 2))
+        For k = 1 To kCalc
+            matF(i, k) = CDbl(t(i, 2 + k))
+            ctrInd(i, k) = CDbl(t(i, 2 + kCalc + k))
+        Next k
+    Next i
+    ChargerStockage = True
 End Function

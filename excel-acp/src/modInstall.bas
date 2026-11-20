@@ -12,7 +12,15 @@ Public Const F_LISTES As String = "Listes"
 Public Const F_SYNTHESE As String = "ACP_Synthèse"
 Public Const F_VARIABLES As String = "ACP_Variables"
 Public Const F_INDIVIDUS As String = "ACP_Individus"
-Public Const F_GRAPH As String = "ACP_Graph"
+Public Const F_GRAPH As String = "ACP_Graph"          ' ancienne version (supprimée si présente)
+Public Const F_GRAPH_SYN As String = "ACP_GraphSyn"   ' données des graphiques (masquées)
+Public Const F_GRAPH_VAR As String = "ACP_GraphVar"
+Public Const F_GRAPH_IND As String = "ACP_GraphInd"
+Public Const F_STOCK As String = "ACP_Stock"          ' résultats conservés pour redessiner
+
+' Sélecteurs d'axes sur les feuilles ACP_Variables et ACP_Individus
+Public Const CEL_AXE_X As String = "C3"
+Public Const CEL_AXE_Y As String = "E3"
 
 ' --- Cellules de paramètres (feuille Accueil) --------------------------------
 Public Const P_FICHIER As String = "C6"
@@ -236,7 +244,9 @@ Private Sub ConstruireAccueil()
         .Value = "Normée : variables d'unités différentes (cas usuel)."
     End With
     ws.Range("D14").Value = "Les cellules vides ou non numériques sont manquantes."
-    ws.Range("D17").Value = "Les graphiques utilisent les axes choisis ci-dessus."
+    ws.Range("D15").Value = "Plan initial des graphiques : modifiable ensuite"
+    ws.Range("D16").Value = "sur les feuilles ACP_Variables et ACP_Individus."
+    ws.Range("D17").Value = "Les 10 premiers axes au moins restent disponibles."
     ws.Range("D18").Value = "Au-delà, seuls les plus contributifs sont nommés."
     ws.Range("D13:D18").Font.Color = RGB(110, 110, 110)
     ws.Range("D13:D18").Font.Italic = True
@@ -302,7 +312,7 @@ Private Sub Libelle(ws As Worksheet, ByVal ligne As Long, ByVal texte As String,
     End If
 End Sub
 
-Private Sub AjouterBouton(ws As Worksheet, ByVal adresse As String, ByVal texte As String, ByVal macro As String, ByVal couleur As Long)
+Public Sub AjouterBouton(ws As Worksheet, ByVal adresse As String, ByVal texte As String, ByVal macro As String, ByVal couleur As Long)
     Dim r As Range, shp As Shape
     Set r = ws.Range(adresse)
     Set shp = ws.Shapes.AddShape(msoShapeRoundedRectangle, r.Left + 2, r.Top + 2, r.Width - 4, r.Height - 4)
@@ -335,7 +345,7 @@ End Sub
 
 Public Sub SupprimerResultats()
     Dim noms As Variant, i As Long, ws As Worksheet
-    noms = Array(F_SYNTHESE, F_VARIABLES, F_INDIVIDUS, F_GRAPH)
+    noms = Array(F_SYNTHESE, F_VARIABLES, F_INDIVIDUS, F_GRAPH, F_GRAPH_SYN, F_GRAPH_VAR, F_GRAPH_IND, F_STOCK)
     Application.DisplayAlerts = False
     For i = LBound(noms) To UBound(noms)
         Set ws = ObtenirFeuille(CStr(noms(i)))

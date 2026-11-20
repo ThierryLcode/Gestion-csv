@@ -32,11 +32,20 @@ Private Function CouleurGrille() As Long
     CouleurGrille = RGB(225, 224, 217)
 End Function
 
-Public Sub InitGraphiques()
-    Set wsGraph = ObtenirFeuille(F_GRAPH, True)
+' Prépare la feuille masquée qui reçoit les données des graphiques
+' (une feuille par feuille de résultats, pour pouvoir redessiner l'une sans l'autre)
+Public Sub InitGraphiques(ByVal nomFeuille As String)
+    Set wsGraph = ObtenirFeuille(nomFeuille, True)
     wsGraph.Cells.Clear
     wsGraph.Visible = xlSheetHidden
     colLibre = 1
+End Sub
+
+Public Sub SupprimerGraphiques(ws As Worksheet)
+    Dim i As Long
+    For i = ws.ChartObjects.Count To 1 Step -1
+        ws.ChartObjects(i).Delete
+    Next i
 End Sub
 
 ' Réserve un bloc de cellules dans la feuille masquée
@@ -52,6 +61,7 @@ Private Function NouveauGraphique(ws As Worksheet, ByVal gauche As Double, ByVal
     Dim co As ChartObject
     Set co = ws.ChartObjects.Add(gauche, haut, largeur, hauteur)
     co.Name = nom
+    co.Placement = xlFreeFloating   ' indépendant des largeurs de colonnes
     Do While co.Chart.SeriesCollection.Count > 0
         co.Chart.SeriesCollection(1).Delete
     Loop

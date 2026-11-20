@@ -65,7 +65,13 @@ On peut aussi coller directement des données dans la feuille **Données** (noms
 - 15 individus les plus contributifs à chacun des deux axes.
 - Barycentres et eta² des groupes ; tableau filtrable de tous les individus : coordonnées, cos², contributions, distance au centre, qualité de représentation sur le plan.
 
-Les données des graphiques sont stockées dans la feuille masquée `ACP_Graph`. « Effacer les résultats » supprime les feuilles `ACP_*`.
+### Choisir les dimensions des graphiques
+
+Le plan affiché au départ est celui de la feuille Accueil (« Axe horizontal / vertical », 1-2 par défaut). Ensuite, en haut des feuilles `ACP_Variables` et `ACP_Individus`, une barre permet de choisir **l'axe horizontal et l'axe vertical** (listes déroulantes) puis de cliquer sur **« Actualiser les graphiques »** : le cercle des corrélations, la carte des individus et les graphiques de contributions sont redessinés pour ce plan (par exemple Dim.1-Dim.3 ou Dim.2-Dim.3), sans relancer l'ACP. Chaque feuille peut afficher un plan différent.
+
+Au moins les 10 premières dimensions (ou toutes si l'ACP en compte moins) sont disponibles ; pour aller plus loin, augmentez « Nombre d'axes détaillés » et relancez l'ACP. Les tableaux, eux, ne changent pas (la colonne « Qualité plan » reste celle du plan initial, mais les cos² de chaque dimension y figurent).
+
+Les résultats nécessaires sont conservés dans la feuille masquée `ACP_Stock` : le changement de plan fonctionne aussi après avoir fermé et rouvert le classeur. Les données des graphiques sont stockées dans les feuilles masquées `ACP_GraphSyn`, `ACP_GraphVar` et `ACP_GraphInd`. « Effacer les résultats » supprime les feuilles `ACP_*`.
 
 ## Méthode de calcul
 
