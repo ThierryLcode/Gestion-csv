@@ -17,6 +17,10 @@ Public Const F_GRAPH_SYN As String = "ACP_GraphSyn"   ' données des graphiques (
 Public Const F_GRAPH_VAR As String = "ACP_GraphVar"
 Public Const F_GRAPH_IND As String = "ACP_GraphInd"
 Public Const F_STOCK As String = "ACP_Stock"          ' résultats conservés pour redessiner
+Public Const F_CLASSES As String = "ACP_Classes"      ' classification des individus
+Public Const F_GRAPH_CL As String = "ACP_GraphCl"     ' données de la carte des classes
+Public Const F_GRAPH_CL2 As String = "ACP_GraphCl2"   ' données du dendrogramme et des gains
+Public Const F_STOCK_CL As String = "ACP_StockCl"     ' classes conservées pour redessiner
 
 ' Sélecteurs d'axes sur les feuilles ACP_Variables et ACP_Individus
 Public Const CEL_AXE_X As String = "C3"
@@ -34,9 +38,12 @@ Public Const P_AXE_X As String = "C15"
 Public Const P_AXE_Y As String = "C16"
 Public Const P_NB_AXES As String = "C17"
 Public Const P_MAX_ETIQ As String = "C18"
+Public Const P_CL_NB As String = "C21"
+Public Const P_CL_AXES As String = "C22"
+Public Const P_CL_CONSO As String = "C23"
 
 ' --- Tableau des colonnes (feuille Accueil) ----------------------------------
-Public Const LIGNE_ENTETE_COLONNES As Long = 23
+Public Const LIGNE_ENTETE_COLONNES As Long = 28
 Public Const COL_T_NUM As Long = 2
 Public Const COL_T_NOM As Long = 3
 Public Const COL_T_TYPE As Long = 4
@@ -171,6 +178,15 @@ Private Sub PreparerListes()
     For i = 1 To 20
         ws.Cells(i, 8).Value = i
     Next i
+    ' Nombre de classes et nombre d'axes de la classification
+    ws.Cells(1, 9).Value = "Auto"
+    For i = 2 To 8
+        ws.Cells(i, 9).Value = i
+    Next i
+    ws.Cells(1, 10).Value = "Auto"
+    For i = 2 To 20
+        ws.Cells(i, 10).Value = i
+    Next i
 End Sub
 
 Private Sub EcrireListe(ws As Worksheet, ByVal col As Long, valeurs As Variant)
@@ -274,17 +290,36 @@ Private Sub ConstruireAccueil()
     AjouterBouton ws, "E13:G15", "Lancer l'ACP", "LancerACP", RGB(0, 131, 0)
     AjouterBouton ws, "E16:G17", "Effacer les résultats", "EffacerResultats", RGB(120, 120, 120)
 
+    ' Classification des individus
+    TitreSection ws, 20, "Classification des individus (après l'ACP)"
+    Libelle ws, 21, "Nombre de classes", "Auto", True
+    PoserListe ws.Range(P_CL_NB), "I", 8
+    Libelle ws, 22, "Nombre d'axes utilisés", "Auto", True
+    PoserListe ws.Range(P_CL_AXES), "J", 20
+    Libelle ws, 23, "Consolidation par k-means", "Oui", True
+    PoserListe ws.Range(P_CL_CONSO), "D", 2
+    ws.Range("C21:C23").HorizontalAlignment = xlLeft
+    ws.Range("D21").Value = "Auto : choisi d'après les sauts d'inertie (3 à 8)."
+    ws.Range("D22").Value = "Auto : axes retenus (critère de Kaiser)."
+    ws.Range("D23").Value = "Améliore les classes de la CAH (Ward)."
+    With ws.Range("D21:D23")
+        .Font.Color = RGB(110, 110, 110)
+        .Font.Italic = True
+        .Font.Size = 9
+    End With
+    AjouterBouton ws, "E21:G23", "Lancer la classification", "LancerClassification", RGB(98, 80, 214)
+
     ' Tableau des colonnes
-    TitreSection ws, 20, "Colonnes du fichier et rôle dans l'ACP"
-    With ws.Range("B21")
+    TitreSection ws, 25, "Colonnes du fichier et rôle dans l'ACP"
+    With ws.Range("B26")
         .Value = "Active : entre dans le calcul des axes  |  Supplémentaire : projetée sur le cercle sans influencer les axes  |  " & _
                  "Étiquette : nom des individus  |  Groupe : colore les individus (texte, 8 modalités max.)  |  Ignorée : non utilisée"
         .Font.Size = 9
         .Font.Color = RGB(90, 90, 90)
     End With
-    AjouterBouton ws, "E22:F22", "Activer les numériques", "SelectionnerNumeriques", RGB(86, 152, 231)
-    AjouterBouton ws, "G22:H22", "Tout ignorer", "ToutIgnorer", RGB(120, 120, 120)
-    ws.Rows(22).RowHeight = 24
+    ws.Rows(27).RowHeight = 24
+    AjouterBouton ws, "E27:F27", "Activer les numériques", "SelectionnerNumeriques", RGB(86, 152, 231)
+    AjouterBouton ws, "G27:H27", "Tout ignorer", "ToutIgnorer", RGB(120, 120, 120)
 
     EnteteTableauColonnes ws
 End Sub
@@ -361,7 +396,8 @@ End Sub
 
 Public Sub SupprimerResultats()
     Dim noms As Variant, i As Long, ws As Worksheet
-    noms = Array(F_SYNTHESE, F_VARIABLES, F_INDIVIDUS, F_GRAPH, F_GRAPH_SYN, F_GRAPH_VAR, F_GRAPH_IND, F_STOCK)
+    noms = Array(F_SYNTHESE, F_VARIABLES, F_INDIVIDUS, F_GRAPH, F_GRAPH_SYN, F_GRAPH_VAR, F_GRAPH_IND, F_STOCK, _
+                 F_CLASSES, F_GRAPH_CL, F_GRAPH_CL2, F_STOCK_CL)
     Application.DisplayAlerts = False
     For i = LBound(noms) To UBound(noms)
         Set ws = ObtenirFeuille(CStr(noms(i)))

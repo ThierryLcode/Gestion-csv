@@ -289,7 +289,9 @@ End Sub
 Public Sub GraphIndividus(ws As Worksheet, ByVal g As Double, ByVal h As Double, ByVal l As Double, ByVal ht As Double, _
                           ByVal nInd As Long, fx() As Double, fy() As Double, lbl() As String, montrer() As Boolean, _
                           idxG() As Long, nomsG() As String, ByVal nG As Long, baryX() As Double, baryY() As Double, _
-                          ByVal titreX As String, ByVal titreY As String)
+                          ByVal titreX As String, ByVal titreY As String, _
+                          Optional ByVal titreGraph As String = "Carte des individus", _
+                          Optional ByVal nomCentres As String = "Barycentres des groupes")
     Dim ch As Chart, z As Range, i As Long, k As Long, gr As Long, s As Series, t() As Variant
     Dim debut() As Long, effectif() As Long, pos() As Long, ordre() As Long, nbGr As Long
     Dim ligne As Long, nbEtiq As Long, mx As Double, my As Double, coul As Long
@@ -371,7 +373,7 @@ Public Sub GraphIndividus(ws As Worksheet, ByVal g As Double, ByVal h As Double,
             t(gr, 2) = baryY(gr)
         Next gr
         z.Value = t
-        Set s = SerieXY(ch, z.Columns(1), z.Columns(2), "Barycentres des groupes", xlXYScatter)
+        Set s = SerieXY(ch, z.Columns(1), z.Columns(2), nomCentres, xlXYScatter)
         Marqueurs s, RGB(30, 30, 30), 10, xlMarkerStyleDiamond
         For gr = 1 To nG
             If effectif(gr) > 0 Then
@@ -392,7 +394,7 @@ Public Sub GraphIndividus(ws As Worksheet, ByVal g As Double, ByVal h As Double,
         ch.HasLegend = False
     End If
 
-    Titre ch, "Carte des individus"
+    Titre ch, titreGraph
     ' Même échelle sur les deux axes, centrée sur l'origine
     If mx <= 0 Then mx = 1
     If my <= 0 Then my = 1
@@ -497,4 +499,134 @@ Public Sub GraphContributions(ws As Worksheet, ByVal g As Double, ByVal h As Dou
     ch.Axes(xlValue).Format.Line.Visible = msoFalse
     TitreAxe ch.Axes(xlValue), "%"
     ch.Axes(xlCategory).TickLabels.Font.Size = 8
+End Sub
+
+' =============================================================================
+'  Gains d'inertie de la CAH (aide au choix du nombre de classes)
+'  vals(r) = inertie gagnée en passant de r à r + 1 classes (décroissant)
+' =============================================================================
+Public Sub GraphGains(ws As Worksheet, ByVal g As Double, ByVal h As Double, ByVal l As Double, ByVal ht As Double, _
+                      vals() As Double, ByVal n As Long, ByVal nClasses As Long)
+    Dim ch As Chart, z As Range, i As Long, s As Series, t() As Variant, m As Long
+    m = n
+    If m > 15 Then m = 15
+    If m < 1 Then Exit Sub
+    Set z = Zone(m, 2)
+    ReDim t(1 To m, 1 To 2)
+    For i = 1 To m
+        t(i, 1) = TexteCel(CStr(i + 1))
+        t(i, 2) = vals(i)
+    Next i
+    z.Value = t
+
+    Set ch = NouveauGraphique(ws, g, h, l, ht, "Gains", xlColumnClustered)
+    Set s = ch.SeriesCollection.NewSeries
+    s.Name = "=""Gain d'inertie"""
+    s.XValues = z.Columns(1)
+    s.Values = z.Columns(2)
+    s.ChartType = xlColumnClustered
+    s.Format.Fill.ForeColor.RGB = RGB(183, 211, 246)
+    s.Format.Line.Visible = msoFalse
+    For i = 1 To m
+        If i <= nClasses - 1 Then s.Points(i).Format.Fill.ForeColor.RGB = CouleurSerie(7)
+    Next i
+    ch.ChartGroups(1).GapWidth = 40
+    ch.HasLegend = False
+    Titre ch, "Gain d'inertie à chaque division (" & nClasses & " classes retenues en foncé)"
+    TitreAxe ch.Axes(xlCategory), "Nombre de classes obtenu par la division"
+    TitreAxe ch.Axes(xlValue), "Inertie"
+    ch.Axes(xlValue).MinimumScale = 0
+    ch.Axes(xlValue).HasMajorGridlines = True
+    ch.Axes(xlValue).MajorGridlines.Format.Line.ForeColor.RGB = CouleurGrille()
+    ch.Axes(xlValue).Format.Line.Visible = msoFalse
+    ch.Axes(xlValue).TickLabels.NumberFormat = "0.00"
+End Sub
+
+' =============================================================================
+'  Dendrogramme (sommet de l'arbre : nF feuilles)
+'  Nœuds 1..nF = feuilles, nF+1..2nF-1 = fusions ; xN, yN = positions ;
+'  gauche/droite = enfants des fusions ; etiqF/coulF = libellé et couleur des feuilles.
+' =============================================================================
+Public Sub GraphDendrogramme(ws As Worksheet, ByVal g As Double, ByVal h As Double, ByVal l As Double, ByVal ht As Double, _
+                             ByVal nF As Long, xN() As Double, yN() As Double, gauche() As Long, droite() As Long, _
+                             etiqF() As String, coulF() As Long, ByVal coupe As Double)
+    Dim ch As Chart, z As Range, i As Long, m As Long, r As Long, s As Series, t() As Variant, yMax As Double
+
+    If nF < 2 Then Exit Sub
+    Set ch = NouveauGraphique(ws, g, h, l, ht, "Dendrogramme", xlXYScatterLinesNoMarkers)
+
+    ' Branches : une série en « U renversé » par fusion
+    Set z = Zone(4 * (nF - 1), 2)
+    ReDim t(1 To 4 * (nF - 1), 1 To 2)
+    For m = nF + 1 To 2 * nF - 1
+        r = 4 * (m - nF - 1)
+        t(r + 1, 1) = xN(gauche(m)): t(r + 1, 2) = yN(gauche(m))
+        t(r + 2, 1) = xN(gauche(m)): t(r + 2, 2) = yN(m)
+        t(r + 3, 1) = xN(droite(m)): t(r + 3, 2) = yN(m)
+        t(r + 4, 1) = xN(droite(m)): t(r + 4, 2) = yN(droite(m))
+        If yN(m) > yMax Then yMax = yN(m)
+    Next m
+    z.Value = t
+    For m = nF + 1 To 2 * nF - 1
+        r = 4 * (m - nF - 1)
+        Set s = SerieXY(ch, z.Cells(r + 1, 1).Resize(4, 1), z.Cells(r + 1, 2).Resize(4, 1), "Fusion " & (m - nF), xlXYScatterLinesNoMarkers)
+        s.Format.Line.ForeColor.RGB = RGB(90, 90, 85)
+        s.Format.Line.Weight = 1.25
+    Next m
+
+    ' Feuilles (colorées selon la classe)
+    Set z = Zone(nF, 2)
+    ReDim t(1 To nF, 1 To 2)
+    For i = 1 To nF
+        t(i, 1) = xN(i)
+        t(i, 2) = 0
+    Next i
+    z.Value = t
+    Set s = SerieXY(ch, z.Columns(1), z.Columns(2), "Feuilles", xlXYScatter)
+    Marqueurs s, RGB(140, 140, 135), 8, xlMarkerStyleCircle
+    For i = 1 To nF
+        s.Points(i).MarkerBackgroundColor = coulF(i)
+        s.Points(i).HasDataLabel = True
+        With s.Points(i).DataLabel
+            .Text = etiqF(i)
+            .Position = xlLabelPositionBelow
+            .Font.Size = 7
+            .Font.Color = RGB(60, 60, 58)
+        End With
+    Next i
+
+    ' Niveau de coupure
+    If coupe > 0 Then
+        Set z = Zone(2, 2)
+        ReDim t(1 To 2, 1 To 2)
+        t(1, 1) = 0.5: t(1, 2) = coupe
+        t(2, 1) = nF + 0.5: t(2, 2) = coupe
+        z.Value = t
+        Set s = SerieXY(ch, z.Columns(1), z.Columns(2), "Coupure", xlXYScatterLinesNoMarkers)
+        With s.Format.Line
+            .ForeColor.RGB = CouleurSerie(8)
+            .Weight = 1.5
+            .DashStyle = msoLineDash
+        End With
+    End If
+
+    ch.HasLegend = False
+    Titre ch, "Dendrogramme (sommet de l'arbre, coupure en pointillé)"
+    With ch.Axes(xlCategory)
+        .MinimumScale = 0.5
+        .MaximumScale = nF + 0.5
+        .TickLabelPosition = xlTickLabelPositionNone
+        .MajorTickMark = xlTickMarkNone
+        .HasMajorGridlines = False
+        .Format.Line.Visible = msoFalse
+    End With
+    With ch.Axes(xlValue)
+        .MinimumScale = -yMax * 0.12
+        If yMax > 0 Then .MaximumScale = yMax * 1.05
+        .HasMajorGridlines = True
+        .MajorGridlines.Format.Line.ForeColor.RGB = CouleurGrille()
+        .TickLabels.NumberFormat = "0.00"
+        .Format.Line.Visible = msoFalse
+    End With
+    TitreAxe ch.Axes(xlValue), "Gain d'inertie (Ward)"
 End Sub

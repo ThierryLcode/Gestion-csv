@@ -10,7 +10,7 @@ $src     = Join-Path $ici 'src'
 $sortie  = Join-Path $ici 'ACP_Excel.xlsm'
 $journal = Join-Path $ici 'installation_journal.txt'
 # Seuls ces modules sont importés (les autres fichiers .bas éventuels sont ignorés)
-$modules = @('modInstall.bas', 'modCSV.bas', 'modMatrice.bas', 'modGraphiques.bas', 'modACP.bas')
+$modules = @('modInstall.bas', 'modCSV.bas', 'modMatrice.bas', 'modGraphiques.bas', 'modACP.bas', 'modClasses.bas')
 
 function Log($texte, $couleur = 'Gray') {
     Write-Host $texte -ForegroundColor $couleur
@@ -93,7 +93,7 @@ catch {
     Log ""
     Log "ÉCHEC : $($_.Exception.Message)" 'Red'
     Log "Détail enregistré dans $journal" 'Yellow'
-    Log "Autre solution : méthode manuelle décrite dans README.md (import des 5 fichiers .bas avec Alt+F11)." 'Yellow'
+    Log "Autre solution : méthode manuelle décrite dans README.md (import des 6 fichiers .bas avec Alt+F11)." 'Yellow'
 }
 finally {
     if ($wb) { try { $wb.Close($false) } catch {} }

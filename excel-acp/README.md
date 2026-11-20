@@ -10,10 +10,10 @@ Aucun complément ni outil externe : tout est calculé en VBA (diagonalisation d
 
 1. Téléchargez le dossier `excel-acp` (avec son sous-dossier `src`).
 2. Double-cliquez sur **`construire_classeur.bat`**.
-   Le script ouvre Excel en arrière-plan, importe les 5 modules VBA, construit l'interface et enregistre **`ACP_Excel.xlsm`** dans le même dossier.
+   Le script ouvre Excel en arrière-plan, importe les 6 modules VBA, construit l'interface et enregistre **`ACP_Excel.xlsm`** dans le même dossier.
 3. Ouvrez `ACP_Excel.xlsm` et cliquez sur **« Activer le contenu »** (bandeau jaune) pour autoriser les macros.
 
-> En cas d'échec, le message s'affiche dans la fenêtre et est enregistré dans `installation_journal.txt` (à côté du script). Le script n'importe que les 5 modules attendus ; d'autres fichiers `.bas` présents dans `src` sont ignorés.
+> En cas d'échec, le message s'affiche dans la fenêtre et est enregistré dans `installation_journal.txt` (à côté du script). Le script n'importe que les 6 modules attendus ; d'autres fichiers `.bas` présents dans `src` sont ignorés.
 >
 > Le script active temporairement l'option « Accès approuvé au modèle d'objet du projet VBA » (nécessaire pour importer du code) puis la remet dans son état d'origine.
 > Si Windows a bloqué les fichiers téléchargés : clic droit sur le `.zip` → Propriétés → cocher « Débloquer » avant d'extraire.
@@ -21,7 +21,7 @@ Aucun complément ni outil externe : tout est calculé en VBA (diagonalisation d
 ### Méthode manuelle
 
 1. Ouvrez un nouveau classeur Excel, puis **Alt + F11** (éditeur VBA).
-2. **Fichier → Importer un fichier…** et importez les 5 fichiers de `src\` : `modInstall.bas`, `modCSV.bas`, `modMatrice.bas`, `modGraphiques.bas`, `modACP.bas`.
+2. **Fichier → Importer un fichier…** et importez les 6 fichiers de `src\` : `modInstall.bas`, `modCSV.bas`, `modMatrice.bas`, `modGraphiques.bas`, `modACP.bas`, `modClasses.bas`.
 3. Fermez l'éditeur, puis **Alt + F8** → exécutez **`InstallerApplication`**.
 4. Enregistrez le classeur au format **« Classeur Excel (prenant en charge les macros) (*.xlsm) »**.
 
@@ -43,6 +43,7 @@ La feuille **Accueil** regroupe tout :
    Par défaut, les colonnes numériques sont « Active » et la première colonne texte à valeurs uniques devient l'étiquette. Les boutons « Activer les numériques » et « Tout ignorer » accélèrent la sélection. Les choix sont conservés si on actualise la liste.
 3. **Paramètres** : ACP normée (centrée-réduite, cas usuel) ou non normée (centrée) ; valeurs manquantes exclues ou remplacées par la moyenne ; axes des graphiques (plan 1-2 par défaut) ; nombre d'axes détaillés ; nombre maximal d'individus nommés sur la carte.
 4. **Lancer l'ACP**.
+5. Facultatif : **Lancer la classification** (section « Classification des individus ») pour regrouper les individus en classes (voir plus bas).
 
 On peut aussi coller directement des données dans la feuille **Données** (noms de colonnes en ligne 1) puis cliquer sur « Actualiser la liste des colonnes ».
 
@@ -75,6 +76,28 @@ Au moins les 10 premières dimensions (ou toutes si l'ACP en compte moins) sont 
 
 Les résultats nécessaires sont conservés dans la feuille masquée `ACP_Stock` : le changement de plan fonctionne aussi après avoir fermé et rouvert le classeur. Les données des graphiques sont stockées dans les feuilles masquées `ACP_GraphSyn`, `ACP_GraphVar` et `ACP_GraphInd`. « Effacer les résultats » supprime les feuilles `ACP_*`.
 
+### Feuille `ACP_Classes` (classification des individus)
+
+Après l'ACP, le bouton **« Lancer la classification »** regroupe les individus en classes homogènes, selon la démarche classique « classification sur composantes principales » (HCPC) :
+
+1. **CAH de Ward** sur les coordonnées des individus dans les premières dimensions de l'ACP (par défaut les axes retenus par le critère de Kaiser ; on écarte ainsi le « bruit » des derniers axes). Au-delà de 2 000 individus, ceux-ci sont d'abord pré-regroupés en 100 groupes par k-means.
+2. **Nombre de classes** : automatique (plus fort saut d'inertie entre 3 et 8 classes) ou imposé (2 à 8).
+3. **Consolidation par k-means** (facultative) à partir des centres de la CAH.
+
+Paramètres sur la feuille Accueil : nombre de classes (« Auto » ou 2 à 8), nombre d'axes utilisés (« Auto » ou 2 à 20), consolidation (Oui/Non).
+
+La feuille présente :
+- la **carte des individus colorés par classe** avec les centres des classes (plan modifiable avec la barre d'axes) ;
+- le **dendrogramme** (sommet de l'arbre, feuilles colorées selon la classe, niveau de coupure en pointillé) et le **diagramme des gains d'inertie** qui justifie le nombre de classes ;
+- un résumé (part de l'inertie expliquée par les classes, nombre d'individus réaffectés par la consolidation) ;
+- les classes : effectif, inertie intra-classe, coordonnées des centres ;
+- la **caractérisation des classes par les variables** : tableau coloré des **v-tests** (|v| > 1,96 : moyenne de la classe significativement différente de la moyenne générale) et moyennes par classe, variables supplémentaires comprises ;
+- un **portrait rédigé de chaque classe** : variables à valeurs élevées / faibles, individus les plus typiques (proches du centre), groupe majoritaire ;
+- le croisement classes × groupes (si une colonne « Groupe » est définie) ;
+- la classe de chaque individu (tableau filtrable, avec le numéro de ligne de la feuille Données).
+
+Relancer l'ACP efface la classification (elle dépend des axes) : relancez-la ensuite.
+
 ## Méthode de calcul
 
 Pour *n* individus et *p* variables actives :
@@ -85,7 +108,7 @@ Pour *n* individus et *p* variables actives :
 - Coordonnées des variables `u·√λ` (= corrélations en ACP normée), contributions = `u²`.
 - Bartlett : `χ² = −(n − 1 − (2p + 5)/6) · ln|R|`, `p(p−1)/2` ddl. KMO à partir des corrélations partielles (inverse de *R*).
 
-Les calculs ont été vérifiés contre numpy (écarts de l'ordre de 1e-15) sur le fichier d'exemple.
+Les calculs ont été vérifiés contre numpy (écarts de l'ordre de 1e-15) sur le fichier d'exemple. La CAH de Ward (chaîne des plus proches voisins + formule de Lance-Williams) donne les mêmes partitions et hauteurs que scipy.
 
 ## Exemple
 
@@ -99,7 +122,8 @@ Les calculs ont été vérifiés contre numpy (écarts de l'ordre de 1e-15) sur 
 | `src/modCSV.bas` | Lecture du CSV (encodage, séparateurs, guillemets), conversion des nombres, tableau des colonnes |
 | `src/modMatrice.bas` | Diagonalisation de Jacobi, tris, corrélations |
 | `src/modACP.bas` | Calcul de l'ACP, tests, tableaux, interprétation automatique |
-| `src/modGraphiques.bas` | Éboulis, cercle des corrélations, carte des individus, contributions |
+| `src/modGraphiques.bas` | Éboulis, cercle des corrélations, carte des individus, contributions, dendrogramme, gains d'inertie |
+| `src/modClasses.bas` | Classification : CAH de Ward, consolidation k-means, v-tests, portraits des classes |
 | `construire_classeur.bat` / `.ps1` | Construction automatique de `ACP_Excel.xlsm` |
 
 Les fichiers `.bas` sont encodés en Windows-1252 avec fins de ligne CRLF, l'encodage attendu par l'éditeur VBA pour conserver les accents.

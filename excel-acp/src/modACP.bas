@@ -5,30 +5,30 @@ Attribute VB_Name = "modACP"
 ' =============================================================================
 Option Explicit
 
-' --- Données de l'analyse -----------------------------------------------------
-Private nInd As Long, nVar As Long, nSup As Long
-Private nomsVar() As String, nomsSup() As String
-Private etiq() As String, ligneSource() As Long
-Private matX() As Double, matZ() As Double
-Private matSup() As Double, presSup() As Boolean
-Private moy() As Double, ect() As Double, vMin() As Double, vMax() As Double, nManq() As Long
-Private matR() As Double, matC() As Double
-Private lam() As Double, vec() As Double
-Private inertieTot As Double, nAxes As Long, kAff As Long, kCalc As Long
-Private matF() As Double, dist2() As Double
-Private coordVar() As Double, corVar() As Double, cos2Var() As Double, ctrVar() As Double
-Private cos2Ind() As Double, ctrInd() As Double
-Private corSup() As Double
-Private normee As Boolean, imputer As Boolean
-Private axeX As Long, axeY As Long, maxEtiq As Long
-Private kmoOK As Boolean, kmoGlobal As Double, msa() As Double
-Private bartOK As Boolean, bartChi2 As Double, bartDdl As Double, bartP As Double, logDet As Double
-Private nGroupes As Long, nomsGroupes() As String, idxGroupe() As Long, effGroupe() As Long
-Private baryG() As Double, eta2() As Double
-Private nLignesTotal As Long, nExclues As Long, nImputees As Long
-Private colEtiq As Long, colGroupe As Long, nomColGroupe As String
-Private avertissements As String
-Private nbKaiser As Long, nbBaton As Long, nb80 As Long, nbRetenus As Long
+' --- Données de l'analyse (publiques : partagées avec le module modClasses) -----
+Public nInd As Long, nVar As Long, nSup As Long
+Public nomsVar() As String, nomsSup() As String
+Public etiq() As String, ligneSource() As Long
+Public matX() As Double, matZ() As Double
+Public matSup() As Double, presSup() As Boolean
+Public moy() As Double, ect() As Double, vMin() As Double, vMax() As Double, nManq() As Long
+Public matR() As Double, matC() As Double
+Public lam() As Double, vec() As Double
+Public inertieTot As Double, nAxes As Long, kAff As Long, kCalc As Long
+Public matF() As Double, dist2() As Double
+Public coordVar() As Double, corVar() As Double, cos2Var() As Double, ctrVar() As Double
+Public cos2Ind() As Double, ctrInd() As Double
+Public corSup() As Double
+Public normee As Boolean, imputer As Boolean
+Public axeX As Long, axeY As Long, maxEtiq As Long
+Public kmoOK As Boolean, kmoGlobal As Double, msa() As Double
+Public bartOK As Boolean, bartChi2 As Double, bartDdl As Double, bartP As Double, logDet As Double
+Public nGroupes As Long, nomsGroupes() As String, idxGroupe() As Long, effGroupe() As Long
+Public baryG() As Double, eta2() As Double
+Public nLignesTotal As Long, nExclues As Long, nImputees As Long
+Public colEtiq As Long, colGroupe As Long, nomColGroupe As String
+Public avertissements As String
+Public nbKaiser As Long, nbBaton As Long, nb80 As Long, nbRetenus As Long
 
 ' Mise en forme
 Private Const FMT_NB As String = "0.000"
@@ -85,7 +85,7 @@ Erreur:
     MsgBox Err.Description, vbExclamation, "ACP impossible"
 End Sub
 
-Private Function Pct(ByVal k As Long) As Double
+Public Function Pct(ByVal k As Long) As Double
     If inertieTot > 0 Then Pct = 100# * lam(k) / inertieTot
 End Function
 
@@ -582,7 +582,7 @@ End Function
 ' =============================================================================
 '  Outils de mise en forme des feuilles de résultats
 ' =============================================================================
-Private Sub PreparerFeuille(ws As Worksheet, ByVal titre As String, ByVal sousTitre As String)
+Public Sub PreparerFeuille(ws As Worksheet, ByVal titre As String, ByVal sousTitre As String)
     ws.Cells.Clear
     ws.Activate
     On Error Resume Next
@@ -605,7 +605,7 @@ Private Sub PreparerFeuille(ws As Worksheet, ByVal titre As String, ByVal sousTi
     End With
 End Sub
 
-Private Function Section(ws As Worksheet, ByVal ligne As Long, ByVal texte As String) As Long
+Public Function Section(ws As Worksheet, ByVal ligne As Long, ByVal texte As String) As Long
     With ws.Range(ws.Cells(ligne, 2), ws.Cells(ligne, 14))
         .Borders(xlEdgeBottom).Color = CouleurTitre()
         .Borders(xlEdgeBottom).Weight = xlThin
@@ -619,7 +619,7 @@ Private Function Section(ws As Worksheet, ByVal ligne As Long, ByVal texte As St
     Section = ligne + 2
 End Function
 
-Private Function Ligne(ws As Worksheet, ByVal r As Long, ByVal texte As String, Optional ByVal gras As Boolean = False, _
+Public Function Ligne(ws As Worksheet, ByVal r As Long, ByVal texte As String, Optional ByVal gras As Boolean = False, _
                        Optional ByVal couleur As Long = -1, Optional ByVal retrait As Long = 0) As Long
     With ws.Cells(r, 2)
         .Value = "'" & Sym(texte)
@@ -631,7 +631,7 @@ Private Function Ligne(ws As Worksheet, ByVal r As Long, ByVal texte As String, 
 End Function
 
 ' Écrit un tableau (en-têtes + valeurs) et renvoie la plage complète
-Private Function Tableau(ws As Worksheet, ByVal r As Long, ByVal c As Long, entetes As Variant, valeurs As Variant, _
+Public Function Tableau(ws As Worksheet, ByVal r As Long, ByVal c As Long, entetes As Variant, valeurs As Variant, _
                          ByVal nbL As Long, ByVal nbC As Long, Optional ByVal fmt As String = FMT_NB) As Range
     Dim h As Range, corps As Range, j As Long
     Set h = ws.Cells(r, c).Resize(1, nbC)
@@ -658,7 +658,7 @@ Private Function Tableau(ws As Worksheet, ByVal r As Long, ByVal c As Long, ente
 End Function
 
 ' Échelle de couleurs à 3 niveaux (rouge - gris neutre - bleu)
-Private Sub EchelleDivergente(rng As Range, ByVal vMinE As Double, ByVal vMaxE As Double)
+Public Sub EchelleDivergente(rng As Range, ByVal vMinE As Double, ByVal vMaxE As Double)
     Dim cs As ColorScale
     Set cs = rng.FormatConditions.AddColorScale(ColorScaleType:=3)
     With cs.ColorScaleCriteria(1)
@@ -679,7 +679,7 @@ Private Sub EchelleDivergente(rng As Range, ByVal vMinE As Double, ByVal vMaxE A
 End Sub
 
 ' Échelle séquentielle (blanc -> bleu)
-Private Sub EchelleSequentielle(rng As Range)
+Public Sub EchelleSequentielle(rng As Range)
     Dim cs As ColorScale
     Set cs = rng.FormatConditions.AddColorScale(ColorScaleType:=2)
     With cs.ColorScaleCriteria(1)
@@ -692,7 +692,7 @@ Private Sub EchelleSequentielle(rng As Range)
     End With
 End Sub
 
-Private Sub AjusterLargeurs(ws As Worksheet, tables As Collection, Optional ByVal largeurMax As Double = 40)
+Public Sub AjusterLargeurs(ws As Worksheet, tables As Collection, Optional ByVal largeurMax As Double = 40)
     Dim larg() As Double, t As Variant, c As Long, rng As Range, nC As Long
     nC = 1
     For Each t In tables
@@ -719,7 +719,7 @@ Private Sub AjusterLargeurs(ws As Worksheet, tables As Collection, Optional ByVa
 End Sub
 
 ' Première ligne située sous une position verticale (en points)
-Private Function LigneSous(ws As Worksheet, ByVal y As Double) As Long
+Public Function LigneSous(ws As Worksheet, ByVal y As Double) As Long
     Dim r As Long
     r = 1
     Do While ws.Rows(r).Top < y
@@ -736,11 +736,11 @@ Private Function TitreAxe(ByVal k As Long) As String
     TitreAxe = "Dim." & k & " (" & Format$(Pct(k), "0.0") & " %)"
 End Function
 
-Private Function NombreTexte(ByVal x As Double, Optional ByVal fmt As String = "0.00") As String
+Public Function NombreTexte(ByVal x As Double, Optional ByVal fmt As String = "0.00") As String
     NombreTexte = Format$(x, fmt)
 End Function
 
-Private Function Signe(ByVal x As Double, Optional ByVal fmt As String = "0.00") As String
+Public Function Signe(ByVal x As Double, Optional ByVal fmt As String = "0.00") As String
     Signe = Format$(x, "+" & fmt & ";-" & fmt & ";" & fmt)
 End Function
 
@@ -1232,11 +1232,11 @@ Private Sub EcrireSynthese()
 End Sub
 
 ' Remplace les jetons {>=} et {<=} par les symboles Unicode correspondants
-Private Function Sym(ByVal s As String) As String
+Public Function Sym(ByVal s As String) As String
     Sym = Replace(Replace(s, "{>=}", ChrW(8805)), "{<=}", ChrW(8804))
 End Function
 
-Private Function Paire(ws As Worksheet, ByVal r As Long, ByVal libelle As String, ByVal valeur As String) As Long
+Public Function Paire(ws As Worksheet, ByVal r As Long, ByVal libelle As String, ByVal valeur As String) As Long
     ws.Cells(r, 2).Value = "'" & Sym(libelle)
     ws.Cells(r, 2).Font.Color = RGB(90, 90, 90)
     ws.Cells(r, 3).Value = "'" & valeur
@@ -1518,7 +1518,7 @@ Private Sub DessinerGraphiquesIndividus(ws As Worksheet, ByVal ax As Long, ByVal
 End Sub
 
 ' Barre de choix des dimensions (ligne 3) au-dessus des graphiques
-Private Sub BarreAxes(ws As Worksheet, ByVal ax As Long, ByVal ay As Long)
+Public Sub BarreAxes(ws As Worksheet, ByVal ax As Long, ByVal ay As Long)
     Dim i As Long
     For i = ws.Shapes.Count To 1 Step -1
         If Left$(ws.Shapes(i).Name, 4) = "btn_" Then ws.Shapes(i).Delete
@@ -1566,7 +1566,7 @@ Public Sub ActualiserGraphiques()
     Dim ws As Worksheet, ax As Long, ay As Long
     On Error GoTo Erreur
     Set ws = ActiveSheet
-    If ws.Name <> F_VARIABLES And ws.Name <> F_INDIVIDUS Then Exit Sub
+    If ws.Name <> F_VARIABLES And ws.Name <> F_INDIVIDUS And ws.Name <> F_CLASSES Then Exit Sub
     If Not ChargerStockage() Then Err.Raise ERR_ACP, , "Résultats de l'ACP introuvables : relancez l'ACP depuis la feuille Accueil."
     ax = CLng(Val(TexteCellule(ws.Range(CEL_AXE_X).Value)))
     ay = CLng(Val(TexteCellule(ws.Range(CEL_AXE_Y).Value)))
@@ -1580,6 +1580,8 @@ Public Sub ActualiserGraphiques()
     Application.Cursor = xlWait
     If ws.Name = F_VARIABLES Then
         DessinerGraphiquesVariables ws, ax, ay
+    ElseIf ws.Name = F_CLASSES Then
+        DessinerCarteClasses ws, ax, ay
     Else
         DessinerGraphiquesIndividus ws, ax, ay, False
     End If
@@ -1599,22 +1601,27 @@ End Sub
 '  Colonnes : A-B paramètres | D valeurs propres | puis blocs variables,
 '  variables supplémentaires, groupes et individus.
 ' -----------------------------------------------------------------------------
-Private Sub ColonnesStock(ByVal k As Long, ByRef cV As Long, ByRef cS As Long, ByRef cG As Long, ByRef cI As Long)
+Private Sub ColonnesStock(ByVal k As Long, ByRef cV As Long, ByRef cS As Long, ByRef cG As Long, ByRef cI As Long, _
+                          ByRef cX As Long, ByRef cXs As Long, ByRef cL As Long)
     cV = 6                      ' nom | corrélations (k) | contributions (k)
     cS = cV + 1 + 2 * k + 1     ' nom | corrélations (k)
     cG = cS + 1 + k + 1         ' nom | effectif | barycentres (k)
     cI = cG + 2 + k + 1         ' étiquette | groupe | coordonnées (k) | contributions (k)
+    cX = cI + 2 + 2 * k + 1     ' valeurs des variables actives (nVar colonnes)
+    cXs = cX + nVar + 1         ' valeurs des variables supplémentaires (nSup colonnes, vide = manquante)
+    cL = cXs + nSup + 1         ' ligne de l'individu dans la feuille Données
 End Sub
 
 Private Sub EcrireStockage()
     Dim ws As Worksheet, t() As Variant, i As Long, k As Long, cV As Long, cS As Long, cG As Long, cI As Long
+    Dim cX As Long, cXs As Long, cL As Long
 
     Set ws = ObtenirFeuille(F_STOCK, True)
     ws.Cells.Clear
     ws.Visible = xlSheetHidden
-    ColonnesStock kCalc, cV, cS, cG, cI
+    ColonnesStock kCalc, cV, cS, cG, cI, cX, cXs, cL
 
-    ReDim t(1 To 7, 1 To 2)
+    ReDim t(1 To 8, 1 To 2)
     t(1, 1) = "nInd": t(1, 2) = nInd
     t(2, 1) = "nVar": t(2, 2) = nVar
     t(3, 1) = "nSup": t(3, 2) = nSup
@@ -1622,7 +1629,8 @@ Private Sub EcrireStockage()
     t(5, 1) = "kCalc": t(5, 2) = kCalc
     t(6, 1) = "inertie": t(6, 2) = inertieTot
     t(7, 1) = "maxEtiq": t(7, 2) = maxEtiq
-    ws.Range("A1:B7").Value = t
+    t(8, 1) = "nbRetenus": t(8, 2) = nbRetenus
+    ws.Range("A1:B8").Value = t
     ReDim t(1 To kCalc, 1 To 1)
     For k = 1 To kCalc
         t(k, 1) = lam(k)
@@ -1672,10 +1680,28 @@ Private Sub EcrireStockage()
         Next k
     Next i
     ws.Cells(1, cI).Resize(nInd, 2 + 2 * kCalc).Value = t
+
+    ' Valeurs brutes (caractérisation des classes) et lignes d'origine
+    ws.Cells(1, cX).Resize(nInd, nVar).Value = matX
+    If nSup > 0 Then
+        ReDim t(1 To nInd, 1 To nSup)
+        For i = 1 To nInd
+            For k = 1 To nSup
+                If presSup(i, k) Then t(i, k) = matSup(i, k)
+            Next k
+        Next i
+        ws.Cells(1, cXs).Resize(nInd, nSup).Value = t
+    End If
+    ReDim t(1 To nInd, 1 To 1)
+    For i = 1 To nInd
+        t(i, 1) = ligneSource(i)
+    Next i
+    ws.Cells(1, cL).Resize(nInd, 1).Value = t
 End Sub
 
-Private Function ChargerStockage() As Boolean
+Public Function ChargerStockage() As Boolean
     Dim ws As Worksheet, t As Variant, i As Long, k As Long, cV As Long, cS As Long, cG As Long, cI As Long
+    Dim cX As Long, cXs As Long, cL As Long
 
     Set ws = ObtenirFeuille(F_STOCK)
     If ws Is Nothing Then Exit Function
@@ -1687,8 +1713,11 @@ Private Function ChargerStockage() As Boolean
     kCalc = CLng(ws.Range("B5").Value)
     inertieTot = CDbl(ws.Range("B6").Value)
     maxEtiq = CLng(ws.Range("B7").Value)
+    nbRetenus = CLng(Val(TexteCellule(ws.Range("B8").Value)))
+    If nbRetenus < 2 Then nbRetenus = 2
     If nInd < 1 Or nVar < 2 Or kCalc < 2 Then Exit Function
-    ColonnesStock kCalc, cV, cS, cG, cI
+    If TexteCellule(ws.Range("A8").Value) <> "nbRetenus" Then Exit Function   ' stockage d'une ancienne version
+    ColonnesStock kCalc, cV, cS, cG, cI, cX, cXs, cL
 
     ReDim lam(1 To kCalc)
     For k = 1 To kCalc
@@ -1740,6 +1769,31 @@ Private Function ChargerStockage() As Boolean
             matF(i, k) = CDbl(t(i, 2 + k))
             ctrInd(i, k) = CDbl(t(i, 2 + kCalc + k))
         Next k
+    Next i
+
+    t = ws.Cells(1, cX).Resize(nInd, nVar).Value
+    ReDim matX(1 To nInd, 1 To nVar)
+    For i = 1 To nInd
+        For k = 1 To nVar
+            matX(i, k) = CDbl(t(i, k))
+        Next k
+    Next i
+    If nSup > 0 Then
+        t = ws.Cells(1, cXs).Resize(nInd, nSup).Value
+        ReDim matSup(1 To nInd, 1 To nSup): ReDim presSup(1 To nInd, 1 To nSup)
+        For i = 1 To nInd
+            For k = 1 To nSup
+                If Not IsEmpty(t(i, k)) Then
+                    matSup(i, k) = CDbl(t(i, k))
+                    presSup(i, k) = True
+                End If
+            Next k
+        Next i
+    End If
+    t = ws.Cells(1, cL).Resize(nInd, 1).Value
+    ReDim ligneSource(1 To nInd)
+    For i = 1 To nInd
+        ligneSource(i) = CLng(t(i, 1))
     Next i
     ChargerStockage = True
 End Function
