@@ -937,7 +937,7 @@ Private Sub EcrireIndividus()
     Dim ws As Worksheet, r As Long, i As Long, k As Long, c As Long, nbC As Long, tables As Collection
     Dim t() As Variant, e() As Variant, rng As Range, hautGraph As Double
     Dim fx() As Double, fy() As Double, montrer() As Boolean, score() As Double, ordre() As Long
-    Dim cX2() As Double, cY2() As Double, bx() As Double, by() As Double, nbM As Long
+    Dim cX2() As Double, cY2() As Double, baryX() As Double, baryY() As Double, nbM As Long
     Dim avecGroupe As Boolean
 
     Set ws = ThisWorkbook.Worksheets(F_INDIVIDUS)
@@ -1466,7 +1466,7 @@ End Sub
 Private Sub DessinerGraphiquesIndividus(ws As Worksheet, ByVal ax As Long, ByVal ay As Long, ByVal signaler As Boolean)
     Dim i As Long, k As Long, haut As Double, gauche As Double, ordre() As Long
     Dim fx() As Double, fy() As Double, montrer() As Boolean, score() As Double
-    Dim cX2() As Double, cY2() As Double, bx() As Double, by() As Double
+    Dim cX2() As Double, cY2() As Double, baryX() As Double, baryY() As Double
     Dim idxG() As Long, nomsG() As String
 
     SupprimerGraphiques ws
@@ -1498,19 +1498,19 @@ Private Sub DessinerGraphiquesIndividus(ws As Worksheet, ByVal ax As Long, ByVal
     End If
 
     If nGroupes > 0 Then
-        ReDim bx(1 To nGroupes): ReDim by(1 To nGroupes)
+        ReDim baryX(1 To nGroupes): ReDim baryY(1 To nGroupes)
         For k = 1 To nGroupes
-            bx(k) = baryG(k, ax)
-            by(k) = baryG(k, ay)
+            baryX(k) = baryG(k, ax)
+            baryY(k) = baryG(k, ay)
         Next k
         idxG = idxGroupe
         nomsG = nomsGroupes
     Else
-        ReDim bx(1 To 1): ReDim by(1 To 1): ReDim idxG(1 To nInd): ReDim nomsG(1 To 1)
+        ReDim baryX(1 To 1): ReDim baryY(1 To 1): ReDim idxG(1 To nInd): ReDim nomsG(1 To 1)
     End If
 
     GraphIndividus ws, gauche, haut, 600, 470, nInd, fx, fy, etiq, montrer, idxG, nomsG, nGroupes, _
-                   bx, by, TitreAxe(ax), TitreAxe(ay)
+                   baryX, baryY, TitreAxe(ax), TitreAxe(ay)
     GraphContributions ws, gauche + 615, haut, 440, 230, etiq, cX2, nInd, 15, 100# / nInd, _
                        "Individus les plus contributifs à la Dim." & ax, "ContribIndX"
     GraphContributions ws, gauche + 615, haut + 240, 440, 230, etiq, cY2, nInd, 15, 100# / nInd, _

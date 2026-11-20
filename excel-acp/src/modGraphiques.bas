@@ -288,7 +288,7 @@ End Sub
 ' =============================================================================
 Public Sub GraphIndividus(ws As Worksheet, ByVal g As Double, ByVal h As Double, ByVal l As Double, ByVal ht As Double, _
                           ByVal nInd As Long, fx() As Double, fy() As Double, lbl() As String, montrer() As Boolean, _
-                          idxG() As Long, nomsG() As String, ByVal nG As Long, bx() As Double, by() As Double, _
+                          idxG() As Long, nomsG() As String, ByVal nG As Long, baryX() As Double, baryY() As Double, _
                           ByVal titreX As String, ByVal titreY As String)
     Dim ch As Chart, z As Range, i As Long, k As Long, gr As Long, s As Series, t() As Variant
     Dim debut() As Long, effectif() As Long, pos() As Long, ordre() As Long, nbGr As Long
@@ -367,8 +367,8 @@ Public Sub GraphIndividus(ws As Worksheet, ByVal g As Double, ByVal h As Double,
         Set z = Zone(nG, 2)
         ReDim t(1 To nG, 1 To 2)
         For gr = 1 To nG
-            t(gr, 1) = bx(gr)
-            t(gr, 2) = by(gr)
+            t(gr, 1) = baryX(gr)
+            t(gr, 2) = baryY(gr)
         Next gr
         z.Value = t
         Set s = SerieXY(ch, z.Columns(1), z.Columns(2), "Barycentres des groupes", xlXYScatter)

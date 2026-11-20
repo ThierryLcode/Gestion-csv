@@ -13,6 +13,8 @@ Aucun complément ni outil externe : tout est calculé en VBA (diagonalisation d
    Le script ouvre Excel en arrière-plan, importe les 5 modules VBA, construit l'interface et enregistre **`ACP_Excel.xlsm`** dans le même dossier.
 3. Ouvrez `ACP_Excel.xlsm` et cliquez sur **« Activer le contenu »** (bandeau jaune) pour autoriser les macros.
 
+> En cas d'échec, le message s'affiche dans la fenêtre et est enregistré dans `installation_journal.txt` (à côté du script). Le script n'importe que les 5 modules attendus ; d'autres fichiers `.bas` présents dans `src` sont ignorés.
+>
 > Le script active temporairement l'option « Accès approuvé au modèle d'objet du projet VBA » (nécessaire pour importer du code) puis la remet dans son état d'origine.
 > Si Windows a bloqué les fichiers téléchargés : clic droit sur le `.zip` → Propriétés → cocher « Débloquer » avant d'extraire.
 
