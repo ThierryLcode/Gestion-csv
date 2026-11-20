@@ -51,12 +51,13 @@ Public Sub LancerACP()
     LireDonnees
     Application.StatusBar = "ACP : calculs..."
     Calculer
-    EcrireStockage
     Application.StatusBar = "ACP : création des tableaux et graphiques..."
     SupprimerResultats
     ObtenirFeuille F_SYNTHESE, True
     ObtenirFeuille F_VARIABLES, True
     ObtenirFeuille F_INDIVIDUS, True
+    ' Après SupprimerResultats (qui efface toutes les feuilles ACP_*, dont ACP_Stock)
+    EcrireStockage
     Application.StatusBar = "ACP : variables..."
     EcrireVariables
     Application.StatusBar = "ACP : individus..."
