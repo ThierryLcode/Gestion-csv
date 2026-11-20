@@ -103,8 +103,7 @@ Public Sub InstallerApplication()
     End With
 
     wb.Worksheets(F_LISTES).Visible = xlSheetHidden
-    wb.Worksheets(F_ACCUEIL).Activate
-    wb.Worksheets(F_ACCUEIL).Range("A1").Select
+    AllerA wb.Worksheets(F_ACCUEIL), "A1"
 
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
@@ -117,11 +116,28 @@ Public Function ObtenirFeuille(ByVal nom As String, Optional ByVal creer As Bool
     Set ws = ThisWorkbook.Worksheets(nom)
     On Error GoTo 0
     If ws Is Nothing And creer Then
+        ' Worksheets.Add active la nouvelle feuille : on réactive ensuite la feuille d'origine
+        Dim actif As Object
+        Set actif = ActiveSheet
         Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
         ws.Name = nom
+        If Not actif Is Nothing Then
+            On Error Resume Next
+            actif.Activate
+            On Error GoTo 0
+        End If
     End If
     Set ObtenirFeuille = ws
 End Function
+
+' Active une feuille et sélectionne une cellule, sans jamais interrompre la macro
+Public Sub AllerA(ws As Worksheet, ByVal adresse As String)
+    On Error Resume Next
+    If ws.Visible <> xlSheetVisible Then Exit Sub
+    ws.Activate
+    ws.Range(adresse).Select
+    On Error GoTo 0
+End Sub
 
 ' Dernière ligne / colonne non vide d'une feuille (0 si la feuille est vide)
 Public Function DerniereLigne(ws As Worksheet) As Long

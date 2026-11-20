@@ -127,10 +127,10 @@ End Sub
 Private Function SerieXY(ch As Chart, xR As Range, yR As Range, ByVal nom As String, ByVal typ As XlChartType) As Series
     Dim s As Series
     Set s = ch.SeriesCollection.NewSeries
-    s.ChartType = typ
     s.Name = "=""" & Replace(Left$(nom, 200), """", "'") & """"
     s.XValues = xR
     s.Values = yR
+    s.ChartType = typ
     Set SerieXY = s
 End Function
 
@@ -463,10 +463,10 @@ Public Sub GraphContributions(ws As Worksheet, ByVal g As Double, ByVal h As Dou
 
     Set ch = NouveauGraphique(ws, g, h, l, ht, nomGraph, xlColumnClustered)
     Set s = ch.SeriesCollection.NewSeries
-    s.ChartType = xlColumnClustered
     s.Name = "=""Contribution (%)"""
     s.XValues = z.Columns(1)
     s.Values = z.Columns(2)
+    s.ChartType = xlColumnClustered
     s.Format.Fill.ForeColor.RGB = CouleurSerie(1)
     s.Format.Line.Visible = msoFalse
     For i = 1 To m
@@ -475,10 +475,10 @@ Public Sub GraphContributions(ws As Worksheet, ByVal g As Double, ByVal h As Dou
     ch.ChartGroups(1).GapWidth = 50
 
     Set s = ch.SeriesCollection.NewSeries
-    s.ChartType = xlLine
     s.Name = "=""Contribution moyenne (" & Format$(seuil, "0.0") & " %)"""
     s.XValues = z.Columns(1)
     s.Values = z.Columns(3)
+    s.ChartType = xlLine
     s.MarkerStyle = xlMarkerStyleNone
     With s.Format.Line
         .ForeColor.RGB = CouleurSerie(8)

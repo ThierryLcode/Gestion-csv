@@ -64,8 +64,7 @@ Public Sub LancerACP()
     Application.StatusBar = "ACP : synthèse..."
     EcrireSynthese
 
-    ThisWorkbook.Worksheets(F_SYNTHESE).Activate
-    ThisWorkbook.Worksheets(F_SYNTHESE).Range("A1").Select
+    AllerA ThisWorkbook.Worksheets(F_SYNTHESE), "A1"
     Application.Calculation = calc
     Application.Cursor = xlDefault
     Application.StatusBar = False
@@ -880,7 +879,7 @@ Private Sub EcrireVariables()
 
     AjusterLargeurs ws, tables
     BarreAxes ws, axeX, axeY
-    ws.Range("A1").Select
+    AllerA ws, "A1"
 End Sub
 
 Private Function PrefixeVide(e() As Variant) As Variant
@@ -1034,7 +1033,7 @@ Private Sub EcrireIndividus()
     rng.AutoFilter
     AjusterLargeurs ws, tables
     BarreAxes ws, axeX, axeY
-    ws.Range("A1").Select
+    AllerA ws, "A1"
 End Sub
 
 ' =============================================================================
@@ -1228,7 +1227,7 @@ Private Sub EcrireSynthese()
     r = Ligne(ws, r, "Détails : feuilles « " & F_VARIABLES & " » et « " & F_INDIVIDUS & " ». Pour afficher un autre plan (ex. Dim.1-Dim.3), choisissez", False, gris)
     r = Ligne(ws, r, "les dimensions en haut de ces feuilles puis cliquez sur « Actualiser les graphiques ».", False, gris, 1)
 
-    ws.Range("A1").Select
+    AllerA ws, "A1"
 End Sub
 
 ' Remplace les jetons {>=} et {<=} par les symboles Unicode correspondants
@@ -1583,8 +1582,7 @@ Public Sub ActualiserGraphiques()
     Else
         DessinerGraphiquesIndividus ws, ax, ay, False
     End If
-    ws.Activate
-    ws.Range(CEL_AXE_X).Select
+    AllerA ws, CEL_AXE_X
     Application.Cursor = xlDefault
     Application.ScreenUpdating = True
     Exit Sub
