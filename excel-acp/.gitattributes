@@ -1,0 +1,5 @@
+# Modules VBA en Windows-1252 + CRLF (encodage attendu par l'éditeur VBA) : ne pas convertir
+*.bas -text diff
+*.bat -text
+*.ps1 -text
+*.csv -text

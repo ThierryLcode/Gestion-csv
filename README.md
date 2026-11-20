@@ -13,6 +13,8 @@ Deux interfaces, un seul moteur :
 
 Les fichiers ne quittent jamais la machine. Les recettes ont le même format JSON dans les deux interfaces.
 
+Une application Excel séparée, **[ACP Excel](excel-acp/README.md)** (macros VBA), réalise des analyses en composantes principales (ACP) à partir d'un fichier CSV, avec graphiques et interprétation automatique.
+
 ## Application de bureau (Windows)
 
 Double-cliquez sur `gestion-csv-bureau.exe` : aucune installation, aucune DLL à fournir. Vous pouvez aussi glisser des fichiers CSV sur la fenêtre (ou sur l'icône du programme, ou utiliser « Ouvrir avec ») pour les importer.
